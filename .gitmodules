@@ -1,0 +1,4 @@
+[submodule "close_pose_estimation"]
+	path = close_pose_estimation
+	url = https://github.com/Patricia1019/P-STMO-for-PD.git
+	branch = real-time
