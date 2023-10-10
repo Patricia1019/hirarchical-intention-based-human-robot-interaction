@@ -3,3 +3,6 @@ This repo will consist of three parts:
 * Distance evaluation
 * close pose estimation
 * safe control limit
+
+commitment log:
+* run pipeline v0: can run pipeline, but no masked frame and blazepose might lose frames
