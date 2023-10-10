@@ -150,7 +150,7 @@ if __name__ == '__main__':
         while True:
             frame = node.io['frame'].get()
             detections_ = node.io['detections'].tryGet()
-            send_flag = 1
+            send_flag = 0
             if detections_ is not None:
                 detections = detections_.detections
                 nearest_dist = 50000
