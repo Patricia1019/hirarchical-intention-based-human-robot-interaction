@@ -106,19 +106,11 @@ class BlazeposeDepthaiModule:
         self.force_detection = force_detection
 
         # self.device = dai.Device()
-        self.xyz = False
+        self.xyz = xyz
         
         if input_src == None or input_src == "rgb" or input_src == "rgb_laconic":
             self.input_type = "rgb" # OAK* internal color camera
-            self.laconic = input_src == "rgb_laconic" # Camera frames are not sent to the host      
-            # if xyz:
-            #     # Check if the device supports stereo
-            #     cameras = self.device.getConnectedCameras()
-            #     if dai.CameraBoardSocket.LEFT in cameras and dai.CameraBoardSocket.RIGHT in cameras:
-            #         self.xyz = True
-            #     else:
-            #         print("Warning: depth unavailable on this device, 'xyz' argument is ignored")
-            self.xyz = True
+            self.laconic = input_src == "rgb_laconic" # Camera frames are not sent to the host
 
             if internal_fps is None:            
                 if "full" in str(self.lm_model):
@@ -413,6 +405,7 @@ class BlazeposeDepthaiModule:
     
                 
     def inference(self,res):
+        self.fps.update()
         if res["type"] != 0 and res["lm_score"] > self.lm_score_thresh:
             body = mpu.Body()
             body.rect_x_center_a = res["rect_center_x"] * self.frame_size

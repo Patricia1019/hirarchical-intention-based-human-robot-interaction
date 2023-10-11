@@ -9,7 +9,7 @@ if __name__ == '__main__':
     # 设置摄像头
     xyz = True
     internal_fps = 30
-    internal_frame_height = 640
+    internal_frame_height = 300
     no_pos_estimate = False
     tracker = BlazeposeDepthai(input_src="rgb", 
             pd_model=None,

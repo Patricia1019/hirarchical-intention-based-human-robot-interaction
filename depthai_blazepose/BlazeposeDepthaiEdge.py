@@ -104,7 +104,7 @@ class BlazeposeDepthai:
         self.force_detection = force_detection
 
         self.device = dai.Device()
-        self.xyz = False
+        self.xyz = xyz
         
         if input_src == None or input_src == "rgb" or input_src == "rgb_laconic":
             self.input_type = "rgb" # OAK* internal color camera
@@ -201,7 +201,7 @@ class BlazeposeDepthai:
         print("Creating pipeline...")
         # Start defining a pipeline
         pipeline = dai.Pipeline()
-        pipeline.setOpenVINOVersion(dai.OpenVINO.Version.VERSION_2021_4)
+        # pipeline.setOpenVINOVersion(dai.OpenVINO.Version.VERSION_2021_4)
         self.pd_input_length = 224
         self.lm_input_length = 256
 

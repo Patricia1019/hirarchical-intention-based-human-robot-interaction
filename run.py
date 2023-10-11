@@ -219,6 +219,9 @@ if __name__ == '__main__':
                 body = blazepose_model.inference(res)
                 if show:
                     frame = renderer.draw(frame, body)
+            
+            else:
+                continue
 
             counter+=1
             current_time = time.monotonic()
