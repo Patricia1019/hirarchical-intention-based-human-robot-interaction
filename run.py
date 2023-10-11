@@ -47,14 +47,19 @@ if __name__ == '__main__':
     stereo = pipeline.create(dai.node.StereoDepth)
     spatialDetectionNetwork = pipeline.create(dai.node.MobileNetSpatialDetectionNetwork)
     script = pipeline.createScript()
+    pose_manip = pipeline.createImageManip()
 
-    # define outputs TODO
+    # define outputs
     xoutDetection = pipeline.create(dai.node.XLinkOut)
     xoutDetection.setStreamName("Detection")
     xoutRGB = pipeline.create(dai.node.XLinkOut)
     xoutRGB.setStreamName("RGB")
     xoutBlazepose = pipeline.create(dai.node.XLinkOut)
     xoutBlazepose.setStreamName("Blazepose")
+    xoutMask = pipeline.create(dai.node.XLinkOut)
+    xoutMask.setStreamName("Mask")
+    xoutDebug = pipeline.create(dai.node.XLinkOut)
+    xoutDebug.setStreamName("Debug")
 
     # define properties
     internal_fps = 30
@@ -117,11 +122,11 @@ if __name__ == '__main__':
                         no_pos_estimate=no_pos_estimate)
     img_w,img_h = blazepose_model.set_pipeline(pipeline,camRGB,stereo,script,xoutBlazepose)
 
+
+    POSE_INPUT_SIZE = (img_w,img_h) # 512 288
+    pose_manip.initialConfig.setResize(POSE_INPUT_SIZE[0], POSE_INPUT_SIZE[1])
+    pose_manip.initialConfig.setKeepAspectRatio(True)
     if syncNN:
-        POSE_INPUT_SIZE = (img_w,img_h)
-        pose_manip = pipeline.createImageManip()
-        pose_manip.initialConfig.setResize(POSE_INPUT_SIZE[0], POSE_INPUT_SIZE[1])
-        pose_manip.initialConfig.setKeepAspectRatio(False)
         spatialDetectionNetwork.passthrough.link(pose_manip.inputImage)
         pose_manip.out.link(script.inputs['frame'])
     else:
@@ -134,8 +139,12 @@ if __name__ == '__main__':
                 output=None)
 
     # script.outputs['masked_frame'].link() # written in blazepose_model.set_pipeline()
+    # script.outputs['detected_frame'].link(mask_manip.inputImage)
+    # script.outputs['mask_img_config'].link(mask_manip.inputConfig)
+    # script.outputs['detected_frame'].link(xoutMask.input)
     script.outputs['out_detections'].link(xoutDetection.input)
     script.outputs['rgb_frame'].link(xoutRGB.input)
+    # script.outputs['frame_data'].link(xoutDebug.input) # debugging
 
     # set script # TODO
     '''
@@ -161,27 +170,36 @@ if __name__ == '__main__':
                             send_flag = 1
                             if detection.spatialCoordinates.z < nearest_dist:
                                 nearest_dist = detection.spatialCoordinates.z
-                                nearesr_person = detection
+                                nearest_person = detection
                         elif send_flag != 1:
                             send_flag = 2
+                     
+            node.io['rgb_frame'].send(frame)
             if send_flag == 1: # pose estimation TODO
-                node.io['masked_frame'].send(frame)
+                # node.io['detected_frame'].send(frame)
+                # mask_img_config = ImageManipConfig()
+                # mask_img_config.setCropRect(nearest_person.xmin,nearest_person.ymin,\
+                #      nearest_person.xmax,nearest_person.ymax)
+                # node.io['mask_img_config'].send(mask_img_config)
+                # buf = Buffer()
+                # buf.setData()
+                node.io['detected_frame'].send(frame)
             elif send_flag == 2: # detection
                 node.io['out_detections'].send(detections_)
-            node.io['rgb_frame'].send(frame)
     """)
 
     device = dai.Device()
     device.startPipeline(pipeline) 
+    calib_data = device.readCalibration()
+    calib_lens_pos = calib_data.getLensPosition(dai.CameraBoardSocket.CAM_A)
+    print(f"RGB calibration lens position: {calib_lens_pos}")
+    camRGB.initialControl.setManualFocus(calib_lens_pos)
     if 1:
-        calib_data = device.readCalibration()
-        calib_lens_pos = calib_data.getLensPosition(dai.CameraBoardSocket.RGB)
-        print(f"RGB calibration lens position: {calib_lens_pos}")
-        camRGB.initialControl.setManualFocus(calib_lens_pos)
-        
         qDetection = device.getOutputQueue("Detection")
         qBlazepose = device.getOutputQueue("Blazepose")
         qRgb = device.getOutputQueue("RGB")
+        qMask = device.getOutputQueue("Mask")
+        qDebug = device.getOutputQueue("Debug")
         
         counter = 0
         fps = 0
@@ -189,7 +207,9 @@ if __name__ == '__main__':
         color = (255, 255, 255)
         while True:
             frame = qRgb.get().getCvFrame()
-
+            if qDebug.has():
+                debug_info = qDebug.get()
+                print(debug_info)
             if qDetection.has():
                 detections = qDetection.get()
                 detections = detections.detections
@@ -214,6 +234,7 @@ if __name__ == '__main__':
                             cv2.rectangle(frame, (x1, y1), (x2, y2), (255, 0, 0), cv2.FONT_HERSHEY_SIMPLEX)
 
             elif qBlazepose.has():
+                # frame = qMask.get().getCvFrame()
                 res = marshal.loads(qBlazepose.get().getData())
                 print(f'blazepose{counter}')
                 body = blazepose_model.inference(res)

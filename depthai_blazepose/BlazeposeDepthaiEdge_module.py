@@ -237,7 +237,8 @@ class BlazeposeDepthaiModule:
         pre_pd_manip.inputImage.setQueueSize(1)
         pre_pd_manip.inputImage.setBlocking(False)
         # cam.preview.link(pre_pd_manip.inputImage)
-        script.outputs['masked_frame'].link(pre_pd_manip.inputImage)
+        # mask_manip.out.link(pre_pd_manip.inputImage)
+        script.outputs['detected_frame'].link(pre_pd_manip.inputImage)
         manager_script.outputs['pre_pd_manip_cfg'].link(pre_pd_manip.inputConfig)
 
         # Define pose detection model
@@ -264,7 +265,8 @@ class BlazeposeDepthaiModule:
         pre_lm_manip.inputImage.setQueueSize(1)
         pre_lm_manip.inputImage.setBlocking(False)
         # cam.preview.link(pre_lm_manip.inputImage)
-        script.outputs['masked_frame'].link(pre_lm_manip.inputImage)
+        # mask_manip.out.link(pre_lm_manip.inputImage)
+        script.outputs['detected_frame'].link(pre_lm_manip.inputImage)
     
         manager_script.outputs['pre_lm_manip_cfg'].link(pre_lm_manip.inputConfig)
 
