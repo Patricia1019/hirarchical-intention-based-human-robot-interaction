@@ -29,8 +29,14 @@ if __name__ == '__main__':
     parentDir = Path(__file__).parent
     detection_nnPath = str((parentDir / Path('./models/mobilenet-ssd_openvino_2021.4_6shave.blob')).resolve().absolute())
 
-    show = True
-    syncNN = False
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--syncNN', action="store_true",
+                    help="sync the output of detection network with the input of pose estimation network")
+    parser.add_argument('--show', action="store_true",
+                    help="show real time camera video")
+    args = parser.parse_args()
+    show = args.show
+    syncNN = args.syncNN
 
     pipeline = dai.Pipeline()
     # define sources
@@ -153,8 +159,8 @@ if __name__ == '__main__':
             nearest_person = None
             send_flag = 0
             for detection in detections:
-                if detection.label == 15 and detection.confidence > 0.6:
-                    if detection.spatialCoordinates.z < 1000: # TODO
+                if detection.label == 15 and detection.confidence > 0.6 and \
+                    detection.spatialCoordinates.z < 1000: # TODO
                         send_flag = 1
                         if detection.spatialCoordinates.z < nearest_dist:
                             nearest_dist = detection.spatialCoordinates.z
@@ -176,11 +182,26 @@ if __name__ == '__main__':
                         cv2.putText(frame, f"Z: {int(detection.spatialCoordinates.z)} mm", (x1 + 10, y1 + 80), cv2.FONT_HERSHEY_TRIPLEX, 0.5, 255)
 
                         cv2.rectangle(frame, (x1, y1), (x2, y2), (255, 0, 0), cv2.FONT_HERSHEY_SIMPLEX)
+
+                cv2.putText(frame, "NN fps: {:.2f}".format(fps), (2, frame.shape[0] - 4), cv2.FONT_HERSHEY_TRIPLEX, 0.4, (255,255,255))
+                cv2.imshow("preview", frame)
+
+                if cv2.waitKey(1) == ord('q'):
+                    break
         
             elif send_flag == 1 and show: # send to pose estimation model
                 assert nearest_person
+                mask = np.zeros(frame.shape[:2], dtype="uint8")
+                # pdb.set_trace()
+                x1 = int(nearest_person.xmin * width)
+                x2 = int(nearest_person.xmax * width)
+                y1 = int(nearest_person.ymin * height)
+                y2 = int(nearest_person.ymax * height)
+                cv2.rectangle(mask, (x1,y1), (x2,y2), 255, -1)
+                masked_frame = cv2.bitwise_and(frame, frame, mask=mask)
+
                 img = dai.ImgFrame()
-                img.setData(frame.transpose(2,0,1).flatten())
+                img.setData(masked_frame.transpose(2,0,1).flatten())
                 img.setTimestamp(time.monotonic())
                 img.setWidth(img_w)
                 img.setHeight(img_h)
@@ -190,8 +211,15 @@ if __name__ == '__main__':
                 if qBlazepose.has():
                     res = marshal.loads(qBlazepose.get().getData())
                     body = blazepose_model.inference(res)
-                    frame = renderer.draw(frame, body)
+                    masked_frame = renderer.draw(masked_frame, body)
                     print(f'blazepose{counter}')
+
+                    cv2.putText(masked_frame, "NN fps: {:.2f}".format(fps), (2, frame.shape[0] - 4), cv2.FONT_HERSHEY_TRIPLEX, 0.4, (255,255,255))
+                    cv2.imshow("preview", masked_frame)
+
+                    if cv2.waitKey(1) == ord('q'):
+                        break
+                
                 else:
                     continue
 
@@ -204,13 +232,6 @@ if __name__ == '__main__':
             fps = counter / (current_time - startTime)
             counter = 0
             startTime = current_time
-
-        if show:
-            cv2.putText(frame, "NN fps: {:.2f}".format(fps), (2, frame.shape[0] - 4), cv2.FONT_HERSHEY_TRIPLEX, 0.4, (255,255,255))
-            cv2.imshow("preview", frame)
-
-            if cv2.waitKey(1) == ord('q'):
-                break
 
     device.close()
                                                                                                                                             
