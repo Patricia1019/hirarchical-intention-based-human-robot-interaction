@@ -11,6 +11,9 @@ sys.path.append('./depthai_blazepose')
 from BlazeposeRenderer import BlazeposeRenderer
 from BlazeposeDepthaiEdge_module_outside import BlazeposeDepthaiModule
 
+def get_distance(detection):
+    return (detection.spatialCoordinates.x**2+detection.spatialCoordinates.y**2+detection.spatialCoordinates.z**2)**0.5
+
 if __name__ == '__main__':
     # pseudo code
 
@@ -108,7 +111,7 @@ if __name__ == '__main__':
     
     # set blazepose module
     xyz = True
-    internal_frame_height = 300
+    internal_frame_height = 450
     no_pos_estimate = False
     blazepose_model = BlazeposeDepthaiModule(input_src="rgb", 
                         pd_model=None,
@@ -160,7 +163,7 @@ if __name__ == '__main__':
             send_flag = 0
             for detection in detections:
                 if detection.label == 15 and detection.confidence > 0.6 and \
-                    detection.spatialCoordinates.z < 1000: # TODO
+                    get_distance(detection) < 1500: # TODO
                         send_flag = 1
                         if detection.spatialCoordinates.z < nearest_dist:
                             nearest_dist = detection.spatialCoordinates.z
