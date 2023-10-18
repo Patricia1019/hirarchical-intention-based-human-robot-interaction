@@ -91,7 +91,7 @@ def read_video(filename, fps=None, skip=0, limit=-1):
         if i == limit:
             break
 
-def render(poses, output, skeleton=Skeleton(), fps=8, bitrate=30000, azim=np.array(70., dtype=np.float32), \
+def render(poses, output, skeleton=Skeleton(), fps=6, bitrate=30000, azim=np.array(70., dtype=np.float32), \
            viewport=(1000, 1002),limit=-1, downsample=1, size=5, input_video_path=None, input_video_skip=0):
     plt.ioff()
     fig = plt.figure(figsize=(size * (1 + len(poses)), size))
@@ -225,10 +225,11 @@ poses = []
 for body in traj:
     poses.append(body.landmarks)
 poses = np.array(poses)
-poses = 2*(poses-poses.min())/(poses.max()-poses.min())-1
-poses = camera_to_world(poses)
-poses[:, :, 2] -= np.min(poses[:, :, 2])
-np.save(f'{ROOT_DIR}/{task}.npy',poses)
-predictions = {"ours":poses}
+poses_norm = 2*(poses-poses.min())/(poses.max()-poses.min())
+# poses_norm = 2*(poses_norm-poses_norm.min(0).min(0))/(poses_norm.max(0).max(0)-poses_norm.min(0).min(0))
+poses_world = camera_to_world(poses_norm)
+poses_world[:, :, 2] -= np.min(poses_world[:, :, 2])
+np.save(f'{ROOT_DIR}/{task}.npy',poses_norm)
+predictions = {"ours":poses_norm}
 render(predictions,f'{ROOT_DIR}/{task}.mp4',input_video_path=f'{ROOT_DIR}/{task}_camera_out.mp4')
 print("ok")

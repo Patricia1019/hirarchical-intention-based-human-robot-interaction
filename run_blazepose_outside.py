@@ -161,6 +161,7 @@ if __name__ == '__main__':
     fourcc = cv2.VideoWriter_fourcc(*'MPV4')
     pose_fps = 8
     video_out = cv2.VideoWriter(f'{ROOT_DIR}/{task}_camera_out.mp4', fourcc, pose_fps, (img_w,img_h))
+    frame_count = 0
     while True:
         frame = qRgb.get().getCvFrame()
         
@@ -231,12 +232,15 @@ if __name__ == '__main__':
 
 
                     cv2.putText(masked_frame, "NN fps: {:.2f}".format(fps), (2, frame.shape[0] - 4), cv2.FONT_HERSHEY_TRIPLEX, 0.4, (255,255,255))
-                    cv2.imshow("preview", masked_frame)
 
                     # save trajectory
                     if body:
+                        frame_count += 1
+                        cv2.putText(masked_frame, "frame: {:.2f}".format(frame_count), (2, frame.shape[0] - 20), cv2.FONT_HERSHEY_TRIPLEX, 0.4, (255,255,255))
                         traj.append(body)
                         video_out.write(masked_frame)
+
+                    cv2.imshow("preview", masked_frame)
 
                     if cv2.waitKey(1) == ord('q'):
                         break
