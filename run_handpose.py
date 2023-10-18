@@ -7,10 +7,9 @@ import pdb
 import marshal
 import time
 import argparse
-import pickle
-sys.path.append('./depthai_blazepose')
-from BlazeposeRenderer import BlazeposeRenderer
-from BlazeposeDepthaiEdge_module_outside import BlazeposeDepthaiModule
+sys.path.append('./depthai_hand_tracker')
+from HandTrackerRenderer import HandTrackerRenderer
+from HandTranckerEdge_module_outside import HandTrackerModule
 
 def get_distance(detection):
     return (detection.spatialCoordinates.x**2+detection.spatialCoordinates.y**2+detection.spatialCoordinates.z**2)**0.5
@@ -150,10 +149,9 @@ if __name__ == '__main__':
     fps = 0
     startTime = time.monotonic()
     color = (255, 255, 255)
-    traj = []
     while True:
         frame = qRgb.get().getCvFrame()
-        
+
         if qDetection.has():
             detections = qDetection.get()
             detections = detections.detections
@@ -165,7 +163,7 @@ if __name__ == '__main__':
             send_flag = 0
             for detection in detections:
                 if detection.label == 15 and detection.confidence > 0.6 and \
-                    get_distance(detection) < 2000: # TODO
+                    get_distance(detection) < 1500: # TODO
                         send_flag = 1
                         if detection.spatialCoordinates.z < nearest_dist:
                             nearest_dist = detection.spatialCoordinates.z
@@ -198,10 +196,10 @@ if __name__ == '__main__':
                 assert nearest_person
                 mask = np.zeros(frame.shape[:2], dtype="uint8")
                 # pdb.set_trace()
-                x1 = int(max((nearest_person.xmin-0.05),0) * width)
-                x2 = int(min((nearest_person.xmax+0.05),1) * width)
-                y1 = int(max((nearest_person.ymin-0.05),0) * height)
-                y2 = int(min((nearest_person.ymax+0.05),1) * height)
+                x1 = int(nearest_person.xmin * width)
+                x2 = int(nearest_person.xmax * width)
+                y1 = int(nearest_person.ymin * height)
+                y2 = int(nearest_person.ymax * height)
                 cv2.rectangle(mask, (x1,y1), (x2,y2), 255, -1)
                 masked_frame = cv2.bitwise_and(frame, frame, mask=mask)
 
@@ -218,10 +216,6 @@ if __name__ == '__main__':
                     body = blazepose_model.inference(res)
                     masked_frame = renderer.draw(masked_frame, body)
                     print(f'blazepose{counter}')
-                    
-                    # save trajectory
-                    if body:
-                        traj.append(body)
 
                     cv2.putText(masked_frame, "NN fps: {:.2f}".format(fps), (2, frame.shape[0] - 4), cv2.FONT_HERSHEY_TRIPLEX, 0.4, (255,255,255))
                     cv2.imshow("preview", masked_frame)
@@ -242,10 +236,6 @@ if __name__ == '__main__':
             counter = 0
             startTime = current_time
 
-    file = open('./human_traj/test.pkl', 'wb')
-    pickle.dump(traj, file)
-    file.close()
-    
     device.close()
                                                                                                                                             
                                                                                                                                             

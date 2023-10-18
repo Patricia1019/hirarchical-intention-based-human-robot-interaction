@@ -9,3 +9,4 @@ commitment log:
 * run pipeline v1: solve the problem of blazepose losing frames(actually it is still slow, but we won't see the lost frames any more)
 * run pipeline v2: move the whole pipeline to the outside and try PSTMO(very slow)
 * run pipeline v3: add mask
+* try handpose and add human traj visualization: add handpose but we don't need such precise prediction, add human traj visualization(based on PSTMO visualization settings)
