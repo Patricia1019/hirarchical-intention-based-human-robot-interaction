@@ -38,9 +38,15 @@ if __name__ == '__main__':
                     help="sync the output of detection network with the input of pose estimation network")
     parser.add_argument('--show', action="store_true",
                     help="show real time camera video")
+    parser.add_argument('--task', default="test",
+                    help="name for traj.pkl and camera video")
     args = parser.parse_args()
     show = args.show
+    task = args.task
     syncNN = args.syncNN
+    ROOT_DIR = f'./human_traj/{task[:-3]}'
+    if not os.path.exists(ROOT_DIR):
+        os.mkdir(ROOT_DIR)
 
     pipeline = dai.Pipeline()
     # define sources
@@ -151,6 +157,10 @@ if __name__ == '__main__':
     startTime = time.monotonic()
     color = (255, 255, 255)
     traj = []
+    #  定义编解码器并创建VideoWriter对象
+    fourcc = cv2.VideoWriter_fourcc(*'MPV4')
+    pose_fps = 8
+    video_out = cv2.VideoWriter(f'{ROOT_DIR}/{task}_camera_out.mp4', fourcc, pose_fps, (img_w,img_h))
     while True:
         frame = qRgb.get().getCvFrame()
         
@@ -218,13 +228,15 @@ if __name__ == '__main__':
                     body = blazepose_model.inference(res)
                     masked_frame = renderer.draw(masked_frame, body)
                     print(f'blazepose{counter}')
-                    
-                    # save trajectory
-                    if body:
-                        traj.append(body)
+
 
                     cv2.putText(masked_frame, "NN fps: {:.2f}".format(fps), (2, frame.shape[0] - 4), cv2.FONT_HERSHEY_TRIPLEX, 0.4, (255,255,255))
                     cv2.imshow("preview", masked_frame)
+
+                    # save trajectory
+                    if body:
+                        traj.append(body)
+                        video_out.write(masked_frame)
 
                     if cv2.waitKey(1) == ord('q'):
                         break
@@ -242,10 +254,11 @@ if __name__ == '__main__':
             counter = 0
             startTime = current_time
 
-    file = open('./human_traj/test.pkl', 'wb')
+    file = open(f'{ROOT_DIR}/{task}.pkl', 'wb')
     pickle.dump(traj, file)
     file.close()
-    
+    video_out.release()
+
     device.close()
                                                                                                                                             
                                                                                                                                             
