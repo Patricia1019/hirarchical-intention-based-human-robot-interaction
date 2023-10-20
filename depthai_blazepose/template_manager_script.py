@@ -155,14 +155,14 @@ while True:
         ${_IF_XYZ}
         # Choosing the reference point: mid hips if hips visible, or mid shoulders otherwise
         # xyz_ref codes the reference point, 1 if mid hips, 2 if mid shoulders, 0 if no reference point
-        if is_visible(right_hip) and is_visible(left_hip):      
-            kp1 = right_hip
-            kp2 = left_hip
-            rrn_xyz_ref_x = (lms[5*kp1] + lms[5*kp2]) / 512 # 512 = 256*2 (256 for normalizing, 2 for the mean)
-            rrn_xyz_ref_y = (lms[5*kp1+1] + lms[5*kp2+1]) / 512
-            sqn_xyz_ref_x, sqn_xyz_ref_y = rr2img(rrn_xyz_ref_x, rrn_xyz_ref_y) 
-            if is_in_image(sqn_xyz_ref_x, sqn_xyz_ref_y):
-                xyz_ref = 1
+        # if is_visible(right_hip) and is_visible(left_hip):      
+        #     kp1 = right_hip
+        #     kp2 = left_hip
+        #     rrn_xyz_ref_x = (lms[5*kp1] + lms[5*kp2]) / 512 # 512 = 256*2 (256 for normalizing, 2 for the mean)
+        #     rrn_xyz_ref_y = (lms[5*kp1+1] + lms[5*kp2+1]) / 512
+        #     sqn_xyz_ref_x, sqn_xyz_ref_y = rr2img(rrn_xyz_ref_x, rrn_xyz_ref_y) 
+        #     if is_in_image(sqn_xyz_ref_x, sqn_xyz_ref_y):
+        #         xyz_ref = 1
         if xyz_ref == 0 and is_visible(right_shoulder) and is_visible(left_shoulder):
             kp1 = right_shoulder
             kp2 = left_shoulder

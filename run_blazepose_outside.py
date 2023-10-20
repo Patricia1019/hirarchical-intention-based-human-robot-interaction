@@ -237,6 +237,11 @@ if __name__ == '__main__':
                     if body:
                         frame_count += 1
                         cv2.putText(masked_frame, "frame: {:.2f}".format(frame_count), (2, frame.shape[0] - 20), cv2.FONT_HERSHEY_TRIPLEX, 0.4, (255,255,255))
+                        landmarks = body.landmarks_world
+                        righthand = landmarks[16]
+                        rightelbow = landmarks[14]
+                        rightshoulder = landmarks[12]
+                        cv2.putText(masked_frame, "right hand x: {:.2f}, y: {:.2f}, z: {:.2f}".format(landmarks[16,0],landmarks[16,1],landmarks[16,2]), (2, frame.shape[0] - 36), cv2.FONT_HERSHEY_TRIPLEX, 0.4, (255,255,255))
                         traj.append(body)
                         video_out.write(masked_frame)
 
