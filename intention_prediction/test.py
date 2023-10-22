@@ -7,9 +7,11 @@ import numpy as np
 import cv2
 from tqdm import tqdm
 import json
+from torch.utils.data import DataLoader
 import pdb
 
 from DLinear import Model
+from Dataset import MyDataset
 
 
 if __name__ == '__main__':
@@ -31,26 +33,21 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     model = Model(args)
-    checkpoint = torch.load(f'{FILE_DIR}/checkpoints/trail10.pth')
+    checkpoint = torch.load(f'{FILE_DIR}/checkpoints/trail20.pth')
     model.load_state_dict(checkpoint)
     model.eval()
 
+    dataset = MyDataset(JSON_FILE,ROOT_DIR,args)
+    dataloader = DataLoader(dataset, batch_size=2, shuffle=True)
+
     criterion = torch.nn.CrossEntropyLoss()
-    for task in data_cut_points.keys():
-        points = data_cut_points[task]
-        npy_file = np.load(f'{ROOT_DIR}/{task[:-3]}/{task}.npy')
-        npy_file = np.concatenate((npy_file[:,11:25,:],npy_file[:,0:1,:]),axis=1)
-        print(task)
-        count = 0
-        for i in range(10,npy_file.shape[0]):
-            index = np.digitize(i, points['start']) # find i in what range of points['start']
-            inputs = torch.from_numpy(npy_file[i-args.frame_window+1:i+1].reshape(1,args.frame_window,args.channels)).float()
-            if points['end'][index-1] >= i and (i-points['start'][index-1]) >= (args.frame_window//2): # getting connectors
-                labels = torch.tensor([1])
-            else: # not getting connectors
-                labels = torch.tensor([0])
-            count += abs(torch.argmax(model(inputs))-labels)/npy_file.shape[0]
-        print(count)
+    count = 0
+    for batch in tqdm(dataloader):
+        inputs, labels = batch
+        outputs = model(inputs)
+        count += sum(abs(torch.argmax(outputs,1)-labels))
+    count = count / len(dataloader)
+    print(count)
             
 
 

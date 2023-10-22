@@ -28,10 +28,10 @@ class MyDataset(Dataset):
             assert len(points['start']) == len(points['end']), f"The number of start points and end points doesn't match in {task}!"
             for i in range(len(points['end'])):
                 end_index = points['end'][i] - 1
-                posInputs1 = torch.from_numpy(npy_file[end_index-self.frame_window+1:end_index+1].reshape(1,self.frame_window,self.channels)).float()
-                posInputs2 = torch.from_numpy(npy_file[end_index-self.frame_window:end_index].reshape(1,self.frame_window,self.channels)).float()
-                posInputs3 = torch.from_numpy(npy_file[end_index-self.frame_window-1:end_index-1].reshape(1,self.frame_window,self.channels)).float()
-                data.extend([(posInputs1,torch.tensor([1])),(posInputs2,torch.tensor([1])),(posInputs3,torch.tensor([1]))])
+                posInputs1 = torch.from_numpy(npy_file[end_index-self.frame_window+1:end_index+1].reshape(self.frame_window,self.channels)).float()
+                posInputs2 = torch.from_numpy(npy_file[end_index-self.frame_window:end_index].reshape(self.frame_window,self.channels)).float()
+                posInputs3 = torch.from_numpy(npy_file[end_index-self.frame_window-1:end_index-1].reshape(self.frame_window,self.channels)).float()
+                data.extend([(posInputs1,torch.tensor(1)),(posInputs2,torch.tensor(1)),(posInputs3,torch.tensor(1))])
                 
                 if i < len(points['end'])-1:
                     array = np.arange(end_index-self.frame_window//2,points['start'][i+1]-self.frame_window//2)
@@ -40,10 +40,10 @@ class MyDataset(Dataset):
                 random_numbers = np.random.choice(array, 3, replace=False)
                 for j in random_numbers:
                     if j+self.frame_window < npy_file.shape[0]-1:
-                        negInput = torch.from_numpy(npy_file[j:j+self.frame_window].reshape(1,self.frame_window,self.channels)).float()
+                        negInput = torch.from_numpy(npy_file[j:j+self.frame_window].reshape(self.frame_window,self.channels)).float()
                     else:
-                        negInput = torch.from_numpy(npy_file[j:npy_file.shape[0]].reshape(1,self.frame_window,self.channels).extend([0]*(j+self.frame_window-npy_file.shape[0]))).float()
-                    data.append((negInput,torch.tensor([0])))
+                        negInput = torch.from_numpy(npy_file[j:npy_file.shape[0]].reshape(self.frame_window,self.channels).extend([0]*(j+self.frame_window-npy_file.shape[0]))).float()
+                    data.append((negInput,torch.tensor(0)))
         
         return data
                 
