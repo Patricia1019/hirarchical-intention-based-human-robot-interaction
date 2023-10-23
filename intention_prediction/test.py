@@ -30,8 +30,12 @@ if __name__ == '__main__':
     parser.add_argument('--channels', type=int, default=15*3, 
                         help='encoder input size, channel here is set as upper body points * 3\
                         DLinear with --individual, use this hyperparameter as the number of channels') 
+    parser.add_argument('--half_body', type=int, default=True, 
+                        help='whether to extract only half body keypoints') 
     args = parser.parse_args()
 
+    if args.half_body:
+        args.channels = 10*3
     model = Model(args)
     checkpoint = torch.load(f'{FILE_DIR}/checkpoints/trail40.pth')
     model.load_state_dict(checkpoint)

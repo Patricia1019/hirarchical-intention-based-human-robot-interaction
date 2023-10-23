@@ -31,6 +31,7 @@ class MyDataset(Dataset):
                 points = intention_tasks[task]
                 npy_file = np.load(f'{self.root_dir}/{task[:-3]}/{task}.npy')
                 npy_file = np.concatenate((npy_file[:,11:25,:],npy_file[:,0:1,:]),axis=1)
+                npy_file = np.concatenate((npy_file[:,1::2,:],npy_file[:,0:1,:],npy_file[:,-1:,:],npy_file[:,-3:-2,:]),axis=1)
                 assert len(points['start']) == len(points['end']), f"The number of start points and end points doesn't match in {task}!"
                 task_data = []
                 for i in range(len(points['end'])):

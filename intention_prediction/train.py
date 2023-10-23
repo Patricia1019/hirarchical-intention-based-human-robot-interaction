@@ -30,10 +30,14 @@ if __name__ == '__main__':
     parser.add_argument('--channels', type=int, default=15*3, 
                         help='encoder input size, channel here is set as upper body points * 3\
                         DLinear with --individual, use this hyperparameter as the number of channels') 
+    parser.add_argument('--half_body', type=int, default=True, 
+                        help='whether to extract only half body keypoints') 
     parser.add_argument('--batch_size', type=int, default=2) 
     parser.add_argument('--epochs', type=int, default=40) 
     args = parser.parse_args()
 
+    if args.half_body:
+        args.channels = 10*3
     net = Model(args)
     criterion = torch.nn.CrossEntropyLoss()
     optimizer = torch.optim.SGD(net.parameters(), lr=0.001, momentum=0.9)
