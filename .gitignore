@@ -1,0 +1,5 @@
+# 忽略所有 .log 文件
+*.mp4
+
+# 忽略一个特定目录
+/human_traj/buildcubes

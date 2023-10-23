@@ -21,7 +21,7 @@ if __name__ == '__main__':
         data_cut_points = json.load(file)
     
     parser = argparse.ArgumentParser()
-    parser.add_argument('--frame_window', default=10,
+    parser.add_argument('--frame_window', default=5,
                         help="looking back window size")
     parser.add_argument('--class_num', default=2,
                         help="number of classification categories")
@@ -33,11 +33,11 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     model = Model(args)
-    checkpoint = torch.load(f'{FILE_DIR}/checkpoints/trail20.pth')
+    checkpoint = torch.load(f'{FILE_DIR}/checkpoints/trail40.pth')
     model.load_state_dict(checkpoint)
     model.eval()
 
-    dataset = MyDataset(JSON_FILE,ROOT_DIR,args)
+    dataset = MyDataset(JSON_FILE,ROOT_DIR,args,type="test")
     dataloader = DataLoader(dataset, batch_size=2, shuffle=True)
 
     criterion = torch.nn.CrossEntropyLoss()

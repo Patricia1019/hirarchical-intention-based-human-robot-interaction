@@ -21,7 +21,7 @@ if __name__ == '__main__':
         data_cut_points = json.load(file)
     
     parser = argparse.ArgumentParser()
-    parser.add_argument('--frame_window', default=10,
+    parser.add_argument('--frame_window', default=5,
                         help="looking back window size")
     parser.add_argument('--class_num', default=2,
                         help="number of classification categories")
@@ -39,8 +39,8 @@ if __name__ == '__main__':
     optimizer = torch.optim.SGD(net.parameters(), lr=0.001, momentum=0.9)
 
     batch_size = args.batch_size
-    dataset = MyDataset(JSON_FILE,ROOT_DIR,args)
-    dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
+    dataset = MyDataset(JSON_FILE,ROOT_DIR,args,type="train")
+    dataloader = DataLoader(dataset, batch_size=batch_size,shuffle=True)
 
     epochs = args.epochs
     for epoch in range(epochs):
