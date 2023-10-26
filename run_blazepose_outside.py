@@ -8,6 +8,7 @@ import marshal
 import time
 import argparse
 import pickle
+FILE_DIR = Path(__file__).parent
 sys.path.append('./depthai_blazepose')
 from BlazeposeRenderer import BlazeposeRenderer
 from BlazeposeDepthaiEdge_module_outside import BlazeposeDepthaiModule
@@ -44,7 +45,7 @@ if __name__ == '__main__':
     show = args.show
     task = args.task
     syncNN = args.syncNN
-    ROOT_DIR = f'./human_traj/{task[:-3]}'
+    ROOT_DIR = f'{FILE_DIR}/human_traj/{task[:-3]}'
     if not os.path.exists(ROOT_DIR):
         os.mkdir(ROOT_DIR)
 
@@ -158,7 +159,7 @@ if __name__ == '__main__':
     color = (255, 255, 255)
     traj = []
     #  定义编解码器并创建VideoWriter对象
-    fourcc = cv2.VideoWriter_fourcc(*'MPV4')
+    fourcc = cv2.VideoWriter_fourcc(*'mp4v')
     pose_fps = 8
     video_out = cv2.VideoWriter(f'{ROOT_DIR}/{task}_camera_out.mp4', fourcc, pose_fps, (img_w,img_h))
     frame_count = 0

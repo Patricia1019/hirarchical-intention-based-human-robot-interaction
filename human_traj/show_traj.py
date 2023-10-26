@@ -22,7 +22,7 @@ parser.add_argument('--task', default="test",
 args = parser.parse_args()
 task = args.task
 ROOT_DIR = f'{FILE_DIR}/{task[:-3]}'
-
+os.environ["DISPLAY"]=":0"
 class Skeleton:
     def parents(self):
         parents = [0,0,11,12,13,14,15,16,15,16,15,16,11,12]
