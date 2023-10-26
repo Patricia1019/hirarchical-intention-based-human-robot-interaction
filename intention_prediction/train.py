@@ -23,14 +23,14 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--frame_window', default=5,
                         help="looking back window size")
-    parser.add_argument('--class_num', default=2,
+    parser.add_argument('--class_num', default=5,
                         help="number of classification categories")
     parser.add_argument('--individual', default=False, 
                         help='DLinear: a linear layer for each variate(channel) individually')
     parser.add_argument('--channels', type=int, default=15*3, 
                         help='encoder input size, channel here is set as upper body points * 3\
                         DLinear with --individual, use this hyperparameter as the number of channels') 
-    parser.add_argument('--half_body', type=int, default=True, 
+    parser.add_argument('--half_body', type=int, default=False, 
                         help='whether to extract only half body keypoints') 
     parser.add_argument('--batch_size', type=int, default=2) 
     parser.add_argument('--epochs', type=int, default=40) 
@@ -39,13 +39,13 @@ if __name__ == '__main__':
     if args.half_body:
         args.channels = 10*3
     net = Model(args)
-    criterion = torch.nn.CrossEntropyLoss()
-    optimizer = torch.optim.SGD(net.parameters(), lr=0.001, momentum=0.9)
 
     batch_size = args.batch_size
     dataset = MyDataset(JSON_FILE,ROOT_DIR,args,type="train")
     dataloader = DataLoader(dataset, batch_size=batch_size,shuffle=True)
 
+    criterion = torch.nn.CrossEntropyLoss(weight=dataset.weights)
+    optimizer = torch.optim.SGD(net.parameters(), lr=0.001, momentum=0.9)
     epochs = args.epochs
     for epoch in range(epochs):
         running_loss = 0.0

@@ -176,7 +176,7 @@ if __name__ == '__main__':
             send_flag = 0
             for detection in detections:
                 if detection.label == 15 and detection.confidence > 0.6 and \
-                    get_distance(detection) < 2000: # TODO
+                    get_distance(detection) < 2100: # TODO
                         send_flag = 1
                         if detection.spatialCoordinates.z < nearest_dist:
                             nearest_dist = detection.spatialCoordinates.z
