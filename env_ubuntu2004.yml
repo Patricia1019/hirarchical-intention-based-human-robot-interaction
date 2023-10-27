@@ -38,6 +38,7 @@ dependencies:
       - dash-html-components==2.0.0
       - dash-table==5.0.0
       - decorator==5.1.1
+      - deprecated==1.2.7
       - exceptiongroup==1.1.3
       - executing==2.0.0
       - fastjsonschema==2.18.1
@@ -56,6 +57,7 @@ dependencies:
       - jupyter-core==5.4.0
       - jupyterlab-widgets==3.0.9
       - kiwisolver==1.4.5
+      - kortex-api==2.6.0.post3
       - markupsafe==2.1.3
       - matplotlib==3.8.0
       - matplotlib-inline==0.1.6
@@ -73,6 +75,7 @@ dependencies:
       - platformdirs==3.11.0
       - plotly==5.18.0
       - prompt-toolkit==3.0.39
+      - protobuf==3.5.1
       - ptyprocess==0.7.0
       - pure-eval==0.2.2
       - pygments==2.16.1
@@ -97,5 +100,6 @@ dependencies:
       - wcwidth==0.2.8
       - werkzeug==3.0.1
       - widgetsnbextension==4.0.9
+      - wrapt==1.15.0
       - zipp==3.17.0
 prefix: /home/peiqi/anaconda3/envs/hrc
