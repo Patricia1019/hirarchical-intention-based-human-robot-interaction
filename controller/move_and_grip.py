@@ -57,7 +57,7 @@ def example_move_to_home_position(base):
     action_list = base.ReadAllActions(action_type)
     action_handle = None
     for action in action_list.action_list:
-        if action.name == "Home":
+        if action.name == "Retract":
             action_handle = action.handle
 
     if action_handle == None:
@@ -93,50 +93,27 @@ def populateCartesianCoordinate(waypointInformation):
     waypoint.pose.theta_y = waypointInformation[5]
     waypoint.pose.theta_z = waypointInformation[6] 
     waypoint.reference_frame = Base_pb2.CARTESIAN_REFERENCE_FRAME_BASE
+    # waypoint.maximum_linear_velocity = 0.1
+    return waypoint
+
+def populateAngularPose(jointPose,durationFactor):
+    waypoint = Base_pb2.AngularWaypoint()
+    waypoint.angles.extend(jointPose)
+    waypoint.duration = durationFactor*1.0    
     
     return waypoint
 
 
-
-def example_trajectory(base, base_cyclic):
+def trajectory_cartesian(base, base_cyclic, waypointsDefinition=None):
 
     base_servo_mode = Base_pb2.ServoingModeInformation()
     base_servo_mode.servoing_mode = Base_pb2.SINGLE_LEVEL_SERVOING
     base.SetServoingMode(base_servo_mode)
     product = base.GetProductConfiguration()
-    waypointsDefinition = tuple(tuple())
-    if(   product.model == Base_pb2.ProductConfiguration__pb2.MODEL_ID_L53 
-       or product.model == Base_pb2.ProductConfiguration__pb2.MODEL_ID_L31):
-        if(product.model == Base_pb2.ProductConfiguration__pb2.MODEL_ID_L31):
-            # pdb.set_trace()
-            kTheta_x = 90.6
-            kTheta_y = -1.0
-            kTheta_z = 150.0
-            waypointsDefinition = ( (0.439,  0.194, 0.448, 0.0, kTheta_x, kTheta_y, kTheta_z),
-                                    (0.200,  0.150, 0.400, 0.0, kTheta_x, kTheta_y, kTheta_z),
-                                    (0.350,  0.050, 0.300, 0.0, kTheta_x, kTheta_y, kTheta_z))
-        else:
-            kTheta_x = 135.0
-            kTheta_y = 0.0
-            kTheta_z = 90.0
-            waypointsDefinition = [ (0.5,   0.3,  0.5,  0.0, 175, 45, 120),
-                                    (0.5,   0.3,  0.5,  0.0, 150, 45, 120)]
-                                    # (0.5,   0.3,  0.5,  0.0, 90, 135, 135)]
-                                    # (0.7,   0.3,  0.5,  0.0, 90, 0, 90),
-                                    # (0.8,   0.3,  0.5,  0.0, 90, 45, 90),
-                                    # (0.8,   0.3,  0.5,  0.0, 90, 45, 135)]
-                                    # (0.5,   0.3,  0.5,  0.1, 90, 0, 135),
-                                    # (0.5,   0.3,  0.5,  0.0, 90, 45, 135))
-                                    # (-0.2,   0.3,  0.33, 0.1, kTheta_x, kTheta_y, kTheta_z),
-                                    # (0.7,   0.4, 0.33, 0.1, kTheta_x, kTheta_y, kTheta_z),
-                                    # (0.61,  0.22, 0.4,  0.1, kTheta_x, kTheta_y, kTheta_z),
-                                    # (0.7,   0.4, 0.33, 0.1, kTheta_x, kTheta_y, kTheta_z),
-                                    # (0.63, -0.22, 0.45, 0.0, 90, 45, 135))
-                                    # (0.60,  0.05, 0.33, 0.0, kTheta_x, kTheta_y, kTheta_z))
-    else:
-        print("Product is not compatible to run this example please contact support with KIN number bellow")
-        print("Product KIN is : " + product.kin())
-
+    if not waypointsDefinition:
+        waypointsDefinition = [ (0.13,   0.278,  0.209,  0.1, 176.006, -0.006, 89.997),
+                                (-0.267, 0.241, 0.209, 0.1, 176.002, 0.001, 89.993),
+                                (-0.267, 0.241, -0.045, 0.0, 175.991, 0.016, 90.000)]
     
     waypoints = Base_pb2.WaypointList()
     
@@ -167,23 +144,6 @@ def example_trajectory(base, base_cyclic):
 
         if finished:
             print("Cartesian trajectory with no optimization completed ")
-            # e_opt = threading.Event()
-            # notification_handle_opt = base.OnNotificationActionTopic(   check_for_end_or_abort(e_opt),
-            #                                                     Base_pb2.NotificationOptions())
-
-            # waypoints.use_optimal_blending = True
-            # base.ExecuteWaypointTrajectory(waypoints)
-
-            # print("Waiting for trajectory to finish ...")
-            # finished_opt = e_opt.wait(TIMEOUT_DURATION)
-            # base.Unsubscribe(notification_handle_opt)
-
-            # if(finished_opt):
-            #     print("Cartesian trajectory with optimization completed ")
-            # else:
-            #     print("Timeout on action notification wait for optimized trajectory")
-
-            # return finished_opt
             return finished
         else:
             print("Timeout on action notification wait for non-optimized trajectory")
@@ -192,7 +152,115 @@ def example_trajectory(base, base_cyclic):
         
     else:
         print("Error found in trajectory") 
-        result.trajectory_error_report.PrintDebugString();  
+        print(result.trajectory_error_report)
+
+
+def trajectory_angular(base, base_cyclic):
+
+    base_servo_mode = Base_pb2.ServoingModeInformation()
+    base_servo_mode.servoing_mode = Base_pb2.SINGLE_LEVEL_SERVOING
+    base.SetServoingMode(base_servo_mode)
+
+    jointPoses = tuple(tuple())
+    product = base.GetProductConfiguration()
+
+    if(   product.model == Base_pb2.ProductConfiguration__pb2.MODEL_ID_L53 
+    or product.model == Base_pb2.ProductConfiguration__pb2.MODEL_ID_L31):
+        if(product.model == Base_pb2.ProductConfiguration__pb2.MODEL_ID_L31):
+            jointPoses = (  (0.0,  344.0, 75.0,  360.0, 300.0, 0.0),
+                            (0.0,  21.0,  145.0, 272.0, 32.0,  273.0),
+                            (42.0, 334.0, 79.0,  241.0, 305.0, 56.0))
+        else:
+            # Binded to degrees of movement and each degrees correspond to one degree of liberty
+            degreesOfFreedom = base.GetActuatorCount();
+            if(degreesOfFreedom.count == 6):
+                jointPoses = (  ( 360.0, 35.6, 281.8, 0.8,  23.8, 88.9 ),
+                                ( 359.6, 49.1, 272.1, 0.3,  47.0, 89.1 ),
+                                ( 320.5, 76.5, 335.5, 293.4, 46.1, 165.6 ),
+                                ( 335.6, 38.8, 266.1, 323.9, 49.7, 117.3 ),
+                                ( 320.4, 76.5, 335.5, 293.4, 46.1, 165.6 ),
+                                ( 28.8,  36.7, 273.2, 40.8,  39.5, 59.8 ),
+                                ( 360.0, 45.6, 251.9, 352.2, 54.3, 101.0 ))
+            else: # degreesOfFreedom.count == 7
+                homepose = (0.001,339.997,180.002,213.996,0.0,310.0,90.0)
+                jointPoses = [ (332.785,15.968,129.522,240.518, 20.905,308.858,0.176 )]
+            
+    else:
+        print("Product is not compatible to run this example please contact support with KIN number bellow")
+        print("Product KIN is : " + product.kin())
+
+
+    waypoints = Base_pb2.WaypointList()    
+    waypoints.duration = 0.0
+    waypoints.use_optimal_blending = False
+    
+    index = 0
+    for jointPose in jointPoses:
+        waypoint = waypoints.waypoints.add()
+        waypoint.name = "waypoint_" + str(index)
+        durationFactor = 1
+        # Joints/motors 5 and 7 are slower and need more time
+        if(index == 4 or index == 6):
+            durationFactor = 6 # Min 30 seconds
+        
+        waypoint.angular_waypoint.CopyFrom(populateAngularPose(jointPose, durationFactor))
+        index = index + 1 
+    
+    
+   # Verify validity of waypoints
+    result = base.ValidateWaypointList(waypoints);
+    if(len(result.trajectory_error_report.trajectory_error_elements) == 0):
+
+        e = threading.Event()
+        notification_handle = base.OnNotificationActionTopic(
+            check_for_end_or_abort(e),
+            Base_pb2.NotificationOptions()
+        )
+
+        print("Reaching angular pose trajectory...")
+        
+        
+        base.ExecuteWaypointTrajectory(waypoints)
+
+        print("Waiting for trajectory to finish ...")
+        finished = e.wait(TIMEOUT_DURATION)
+        base.Unsubscribe(notification_handle)
+
+        if finished:
+            print("Angular movement completed")
+        else:
+            print("Timeout on action notification wait")
+        return finished
+    else:
+        print("Error found in trajectory") 
+        print(result.trajectory_error_report)
+        # return finished
+
+
+class GripperCommandExample:
+    def __init__(self, router, proportional_gain = 2.0):
+
+        self.proportional_gain = proportional_gain
+        self.router = router
+
+        # Create base client using TCP router
+        self.base = BaseClient(self.router)
+
+    def ExampleSendGripperCommands(self):
+
+        # Create the GripperCommand we will send
+        gripper_command = Base_pb2.GripperCommand()
+        finger = gripper_command.gripper.finger.add()
+
+        # Close the gripper with position increments
+        print("Performing gripper test in position...")
+        gripper_command.mode = Base_pb2.GRIPPER_POSITION
+        position = 1.0
+        finger.finger_identifier = 1
+        finger.value = position
+        print("Going to position {:0.2f}...".format(finger.value))
+        self.base.SendGripperCommand(gripper_command)
+        time.sleep(0.8)
 
 
 def main():
@@ -216,7 +284,13 @@ def main():
         success = True
 
         success &= example_move_to_home_position(base)
-        success &= example_trajectory(base, base_cyclic)
+        waypointsDefinition=[(0.13,   0.278,  0.209,  0.1, 176.006, -0.006, 89.997),
+                             (-0.267, 0.241, 0.209, 0.1, 176.002, 0.001, 89.993),
+                             (-0.267, 0.241, -0.045, 0.0, 175.991, 0.016, 90.000)]
+        success &= trajectory_cartesian(base, base_cyclic,waypointsDefinition)
+
+        example = GripperCommandExample(router)
+        example.ExampleSendGripperCommands()
        
         return 0 if success else 1
 
