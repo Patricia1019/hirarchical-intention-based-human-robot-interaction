@@ -74,3 +74,5 @@ class DeviceConnection:
             self.sessionManager.CloseSession(router_options)
 
         self.transport.disconnect()
+
+
