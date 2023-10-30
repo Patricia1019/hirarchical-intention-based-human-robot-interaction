@@ -28,7 +28,8 @@ import pdb
 
 def main():
     # Parse arguments
-    args = utilities.parseConnectionArguments()
+    # args = utilities.parseConnectionArguments()
+    args = utilities.Args()
     
     # Create connection to the device and get the router
     with utilities.DeviceConnection.createTcpConnection(args) as router:
@@ -43,4 +44,5 @@ def main():
         return 0 if success else 1
 
 if __name__ == "__main__":
-    exit(main())
+    # exit(main())
+    main()

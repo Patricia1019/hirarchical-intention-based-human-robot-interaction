@@ -10,6 +10,8 @@ import argparse
 import pickle
 import torch
 FILE_DIR = Path(__file__).parent
+sys.path.append(f"{FILE_DIR}/controller")
+from move_and_grip import main
 sys.path.append(f'{FILE_DIR}/depthai_blazepose')
 from BlazeposeRenderer import BlazeposeRenderer
 from BlazeposeDepthaiEdge_module_outside import BlazeposeDepthaiModule
@@ -47,19 +49,6 @@ def get_intention(index):
     return "no action"
 
 if __name__ == '__main__':
-    # pseudo code
-
-    # open camera
-    # while True:
-    #     frame = get_frame()
-    #     humans_pos,confs = detect_human(frame)
-    #     nearer_dist,nearer_human_pos = get_nearer_human(humans_pos)
-    #     if nearer_dist < limit: # limit must take into v into consideration because human detection might recognize sth non-human as human
-    #         masked_frame = mask_frame(nearer_human_pos)
-    #         human_pose,human_depth = pose_estimation(masked_frame)
-
-    # real code
-
     # path
     parentDir = Path(__file__).parent
     detection_nnPath = str((parentDir / Path('./models/mobilenet-ssd_openvino_2021.4_6shave.blob')).resolve().absolute())
@@ -301,6 +290,7 @@ if __name__ == '__main__':
                         # intention prediction based on naive coordinates changes
                         if righthand[0] < -0.5:
                             intention = "get long tubes"
+                            main()
                         elif righthand[0] > 0.3:
                             intention = "get short tubes"
                         elif len(traj_queue)==frame_size:
