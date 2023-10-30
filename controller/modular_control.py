@@ -1,6 +1,7 @@
 from basic_control import check_for_end_or_abort,move_back,trajectory_cartesian,trajectory_angular,GripperCommand
 import time
 import threading
+from kortex_api.autogen.messages import Base_pb2
 
 class ModuleController:
     def __init__(self,router,base,base_cyclic):
@@ -16,6 +17,8 @@ class ModuleController:
             sleep_time: waiting time for human to complete his action, in seconds
         '''
         e = threading.Event()
+        notification_handle = self.base.OnNotificationActionTopic(   check_for_end_or_abort(e),
+                                                                Base_pb2.NotificationOptions())
         success &= move_back(self.base)
         self.gripper.SendGripperCommands(0.0)
         # move to get the tubes
@@ -31,6 +34,7 @@ class ModuleController:
         success &= trajectory_cartesian(self.base, self.base_cyclic, waypointsDefinition)
         # TODO: add intention recognition
         finished = e.wait(max_time)
+        self.base.Unsubscribe(notification_handle)
         # let go the tube
         self.gripper.SendGripperCommands(0.4)
         return success
