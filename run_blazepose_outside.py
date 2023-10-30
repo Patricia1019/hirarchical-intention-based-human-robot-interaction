@@ -9,9 +9,11 @@ import time
 import argparse
 import pickle
 import torch
+import multiprocessing
+
 FILE_DIR = Path(__file__).parent
 sys.path.append(f"{FILE_DIR}/controller")
-from move_and_grip import main
+from move_and_grip import receiver
 sys.path.append(f'{FILE_DIR}/depthai_blazepose')
 from BlazeposeRenderer import BlazeposeRenderer
 from BlazeposeDepthaiEdge_module_outside import BlazeposeDepthaiModule
@@ -48,21 +50,8 @@ def get_intention(index):
             return key
     return "no action"
 
-if __name__ == '__main__':
-    # path
-    parentDir = Path(__file__).parent
-    detection_nnPath = str((parentDir / Path('./models/mobilenet-ssd_openvino_2021.4_6shave.blob')).resolve().absolute())
 
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--syncNN', action="store_true",
-                    help="sync the output of detection network with the input of pose estimation network")
-    parser.add_argument('--show', action="store_true",
-                    help="show real time camera video")
-    parser.add_argument('--task', default="test",
-                    help="name for traj.pkl and camera video")
-    parser.add_argument('--frame_size', default=5,
-                    help="traj frame size to send into intention prediction module")
-    args = parser.parse_args()
+def sender(conn,args):
     show = args.show
     task = args.task
     syncNN = args.syncNN
@@ -186,7 +175,7 @@ if __name__ == '__main__':
     video_out = cv2.VideoWriter(f'{ROOT_DIR}/{task}_camera_out.mp4', fourcc, pose_fps, (img_w,img_h))
     frame_count = 0
     traj_queue = []
-    IntentionPredictor = IntentionPredictor()
+    # IntentionPredictor = IntentionPredictor()
     old_upperbody = 0
     while True:
         frame = qRgb.get().getCvFrame()
@@ -209,7 +198,7 @@ if __name__ == '__main__':
                             nearest_person = detection
             
             if send_flag == 0 and show:
-                print(f'detection{counter}')
+                # print(f'detection{counter}')
                 for detection in detections:
                     if detection.label == 15 and detection.confidence > 0.6:
                         x1 = int(detection.xmin * width)
@@ -229,6 +218,9 @@ if __name__ == '__main__':
                 cv2.imshow("preview", frame)
 
                 if cv2.waitKey(1) == ord('q'):
+                    conn.send("break")
+                    conn.close() 
+                    # conn.value = 0
                     break
         
             elif send_flag == 1 and show: # send to pose estimation model
@@ -254,7 +246,7 @@ if __name__ == '__main__':
                     res = marshal.loads(qBlazepose.get().getData())
                     body = blazepose_model.inference(res)
                     masked_frame = renderer.draw(masked_frame, body)
-                    print(f'blazepose{counter}')
+                    # print(f'blazepose{counter}')
 
 
                     cv2.putText(masked_frame, "NN fps: {:.2f}".format(fps), (2, frame.shape[0] - 4), cv2.FONT_HERSHEY_TRIPLEX, 0.4, (255,255,255))
@@ -290,7 +282,6 @@ if __name__ == '__main__':
                         # intention prediction based on naive coordinates changes
                         if righthand[0] < -0.5:
                             intention = "get long tubes"
-                            main()
                         elif righthand[0] > 0.3:
                             intention = "get short tubes"
                         elif len(traj_queue)==frame_size:
@@ -305,6 +296,9 @@ if __name__ == '__main__':
                             intention = ""
                         old_upperbody = upperbody
                         
+                        if intention:
+                            conn.send(intention)
+                            # conn.value = 1
                         cv2.putText(masked_frame, f"intention:{intention}", (2, frame.shape[0] - 52), cv2.FONT_HERSHEY_TRIPLEX, 0.4, (255,255,255))
                         cv2.putText(masked_frame, "right hand x: {:.2f}, y: {:.2f}, z: {:.2f}".format(landmarks[16,0],landmarks[16,1],landmarks[16,2]), (2, frame.shape[0] - 36), cv2.FONT_HERSHEY_TRIPLEX, 0.4, (255,255,255))
                         traj.append(body)
@@ -313,6 +307,9 @@ if __name__ == '__main__':
                     cv2.imshow("preview", masked_frame)
 
                     if cv2.waitKey(1) == ord('q'):
+                        conn.send("break")
+                        conn.close() 
+                        # conn.value = 0
                         break
                 
                 else:
@@ -327,13 +324,49 @@ if __name__ == '__main__':
             fps = counter / (current_time - startTime)
             counter = 0
             startTime = current_time
-
     file = open(f'{ROOT_DIR}/{task}.pkl', 'wb')
     pickle.dump(traj, file)
     file.close()
     video_out.release()
 
     device.close()
+
+
+if __name__ == '__main__':
+    # path
+    parentDir = Path(__file__).parent
+    detection_nnPath = str((parentDir / Path('./models/mobilenet-ssd_openvino_2021.4_6shave.blob')).resolve().absolute())
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--syncNN', action="store_true",
+                    help="sync the output of detection network with the input of pose estimation network")
+    parser.add_argument('--show', action="store_true",
+                    help="show real time camera video")
+    parser.add_argument('--task', default="test",
+                    help="name for traj.pkl and camera video")
+    parser.add_argument('--frame_size', default=5,
+                    help="traj frame size to send into intention prediction module")
+    args = parser.parse_args()
+    
+    parent_conn, child_conn = multiprocessing.Pipe()
+    # creating new processes 
+    # p1 = multiprocessing.Process(target=sender, args=(parent_conn,args)) 
+    p2 = multiprocessing.Process(target=receiver, args=(child_conn,))
+    # p1.start()
+    p2.start()
+    sender(parent_conn,args)
+    # wait until processes finish 
+    # p1.join() 
+    p2.join() 
+
+
+    # msg = multiprocessing.Value('i')
+    # p2 = multiprocessing.Process(target=receiver, args=(msg,))
+    # p2.start()
+    # p2.join()
+    # sender(msg,args)
+
+
                                                                                                                                             
                                                                                                                                             
 

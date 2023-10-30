@@ -26,22 +26,31 @@ import utilities
 from modular_control import ModuleController
 import pdb
 
-def main():
+def receiver(conn):
     # Parse arguments
     # args = utilities.parseConnectionArguments()
-    args = utilities.Args()
-    
-    # Create connection to the device and get the router
-    with utilities.DeviceConnection.createTcpConnection(args) as router:
+    while 1:
+        msg = conn.recv()
+        # msg = conn
+        print(msg)
+        if msg == "get long tubes":
+        # if msg.value == 1:
+            args = utilities.Args()
+            
+            # Create connection to the device and get the router
+            with utilities.DeviceConnection.createTcpConnection(args) as router:
 
-        # Create required services
-        base = BaseClient(router)
-        base_cyclic = BaseCyclicClient(router)
-        controller = ModuleController(router,base,base_cyclic)
-        # Example core
-        success = True
-        success = controller.making_module_T(success)
-        return 0 if success else 1
+                # Create required services
+                base = BaseClient(router)
+                base_cyclic = BaseCyclicClient(router)
+                controller = ModuleController(router,base,base_cyclic)
+                # Example core
+                success = True
+                success = controller.making_module_T(success)
+                # return 0 if success else 1
+        elif msg == "break":
+        # elif msg.value == 0:
+            break
 
 if __name__ == "__main__":
     # exit(main())
