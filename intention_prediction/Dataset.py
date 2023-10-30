@@ -7,7 +7,7 @@ from pathlib import Path
 FILE_DIR = Path(__file__).resolve().parent
 import pdb
 
-# 自定义数据集类
+INTENTION_LIST = {"get_connector":1,"stop":2,"straight_up":3,"wave_hand":4}
 class MyDataset(Dataset):
     def __init__(self, json_file, root_dir, args,type="train",transform=None):
         self.json_file = json_file
@@ -17,7 +17,7 @@ class MyDataset(Dataset):
         self.channels = args.channels
         self.type = type
         self.half_body = args.half_body
-        self.intention_list = {"get_connector":1,"stop":2,"straight_up":3,"wave_hand":4}
+        self.intention_list = INTENTION_LIST
         self.data,self.weights = self.process_json()
 
     def process_json(self):
@@ -97,13 +97,10 @@ if __name__ == '__main__':
                         help='whether to extract only half body keypoints') 
     args = parser.parse_args()
 
-    # 创建自定义数据集实例
     dataset = MyDataset(JSON_FILE,ROOT_DIR,args)
 
-    # 创建数据加载器
     batch_size = 1
     dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
 
-    # 遍历数据加载器以获取批次数据
     for batch in dataloader:
         inputs, labels = batch

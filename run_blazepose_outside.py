@@ -8,13 +8,42 @@ import marshal
 import time
 import argparse
 import pickle
+import torch
 FILE_DIR = Path(__file__).parent
-sys.path.append('./depthai_blazepose')
+sys.path.append(f'{FILE_DIR}/depthai_blazepose')
 from BlazeposeRenderer import BlazeposeRenderer
 from BlazeposeDepthaiEdge_module_outside import BlazeposeDepthaiModule
+sys.path.append(f'{FILE_DIR}/intention_prediction')
+from predict import IntentionPredictor
+from Dataset import INTENTION_LIST
 
 def get_distance(detection):
     return (detection.spatialCoordinates.x**2+detection.spatialCoordinates.y**2+detection.spatialCoordinates.z**2)**0.5
+
+def camera_to_world(X, R= np.array([0.14070565, -0.15007018, -0.7552408, 0.62232804], dtype=np.float32),\
+                     t=0):
+    return qrot(np.tile(R, (*X.shape[:-1], 1)), X) + t
+
+def qrot(q, v):
+    """
+    Rotate vector(s) v about the rotation described by 四元数quaternion(s) q.
+    Expects a tensor of shape (*, 4) for q and a tensor of shape (*, 3) for v,
+    where * denotes any number of dimensions.
+    Returns a tensor of shape (*, 3).
+    """
+    assert q.shape[-1] == 4
+    assert v.shape[-1] == 3
+    assert q.shape[:-1] == v.shape[:-1]
+
+    qvec = q[..., 1:]
+    uv = np.cross(qvec, v, len(q.shape) - 1)
+    uuv = np.cross(qvec, uv, len(q.shape) - 1)
+    return (v + 2 * (q[..., :1] * uv + uuv))
+
+def get_intention(index):
+    for key,value in INTENTION_LIST.items():
+        if value == index:
+            return key
 
 if __name__ == '__main__':
     # pseudo code
@@ -41,10 +70,13 @@ if __name__ == '__main__':
                     help="show real time camera video")
     parser.add_argument('--task', default="test",
                     help="name for traj.pkl and camera video")
+    parser.add_argument('--frame_size', default=5,
+                    help="traj frame size to send into intention prediction module")
     args = parser.parse_args()
     show = args.show
     task = args.task
     syncNN = args.syncNN
+    frame_size = args.frame_size
     ROOT_DIR = f'{FILE_DIR}/human_traj/{task[:-3]}'
     if not os.path.exists(ROOT_DIR):
         os.mkdir(ROOT_DIR)
@@ -163,6 +195,8 @@ if __name__ == '__main__':
     pose_fps = 8
     video_out = cv2.VideoWriter(f'{ROOT_DIR}/{task}_camera_out.mp4', fourcc, pose_fps, (img_w,img_h))
     frame_count = 0
+    traj_queue = []
+    IntentionPredictor = IntentionPredictor()
     while True:
         frame = qRgb.get().getCvFrame()
         
@@ -237,6 +271,24 @@ if __name__ == '__main__':
                     # save trajectory
                     if body:
                         frame_count += 1
+                        # intention prediction
+                        if len(traj_queue) < frame_size:
+                            traj_queue.append(body.landmarks)
+                        else:
+                            traj_queue.pop(0)
+                            traj_queue.append(body.landmarks)
+                        assert len(traj_queue) <= frame_size, "the length of accumulated traj is longer than intention prediction frame size!"
+                        if len(traj_queue)==frame_size: # send to intention prediction module
+                            poses = np.array(traj_queue)
+                            poses_norm = 2*(poses-poses.min())/(poses.max()-poses.min())
+                            poses_world = camera_to_world(poses_norm)
+                            poses_world[:, :, 2] -= np.min(poses_world[:, :, 2])
+                            poses_world = np.concatenate((poses_world[:,11:25,:],poses_world[:,0:1,:]),axis=1)
+                            inputs = torch.tensor(poses_world.reshape(1,frame_size,-1)).float()
+                            outputs = IntentionPredictor.predict(inputs)
+                            intention = get_intention(torch.argmax(outputs,1))
+                            cv2.putText(masked_frame, f"intention:{intention}", (2, frame.shape[0] - 52), cv2.FONT_HERSHEY_TRIPLEX, 0.4, (255,255,255))
+
                         cv2.putText(masked_frame, "frame: {:.2f}".format(frame_count), (2, frame.shape[0] - 20), cv2.FONT_HERSHEY_TRIPLEX, 0.4, (255,255,255))
                         landmarks = body.landmarks_world
                         righthand = landmarks[16]
