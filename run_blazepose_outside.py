@@ -44,6 +44,7 @@ def get_intention(index):
     for key,value in INTENTION_LIST.items():
         if value == index:
             return key
+    return "no action"
 
 if __name__ == '__main__':
     # pseudo code
@@ -197,6 +198,7 @@ if __name__ == '__main__':
     frame_count = 0
     traj_queue = []
     IntentionPredictor = IntentionPredictor()
+    old_upperbody = 0
     while True:
         frame = qRgb.get().getCvFrame()
         
@@ -271,29 +273,49 @@ if __name__ == '__main__':
                     # save trajectory
                     if body:
                         frame_count += 1
-                        # intention prediction
+                        landmarks = body.landmarks_world
+                        upperbody = np.concatenate((landmarks[11:25,:],landmarks[0:1,:]),axis=0)
                         if len(traj_queue) < frame_size:
-                            traj_queue.append(body.landmarks)
+                            traj_queue.append(upperbody)
                         else:
                             traj_queue.pop(0)
-                            traj_queue.append(body.landmarks)
+                            traj_queue.append(upperbody)
                         assert len(traj_queue) <= frame_size, "the length of accumulated traj is longer than intention prediction frame size!"
-                        if len(traj_queue)==frame_size: # send to intention prediction module
-                            poses = np.array(traj_queue)
-                            poses_norm = 2*(poses-poses.min())/(poses.max()-poses.min())
-                            poses_world = camera_to_world(poses_norm)
-                            poses_world[:, :, 2] -= np.min(poses_world[:, :, 2])
-                            poses_world = np.concatenate((poses_world[:,11:25,:],poses_world[:,0:1,:]),axis=1)
-                            inputs = torch.tensor(poses_world.reshape(1,frame_size,-1)).float()
-                            outputs = IntentionPredictor.predict(inputs)
-                            intention = get_intention(torch.argmax(outputs,1))
-                            cv2.putText(masked_frame, f"intention:{intention}", (2, frame.shape[0] - 52), cv2.FONT_HERSHEY_TRIPLEX, 0.4, (255,255,255))
+                        # intention prediction based on learning 
+                        # if len(traj_queue)==frame_size: # send to intention prediction module
+                        #     poses = np.array(traj_queue)
+                        #     poses_norm = 2*(poses-poses.min())/(poses.max()-poses.min())
+                        #     poses_world = camera_to_world(poses_norm)
+                        #     poses_world[:, :, 2] -= np.min(poses_world[:, :, 2])
+                        #     poses_world = np.concatenate((poses_world[:,11:25,:],poses_world[:,0:1,:]),axis=1)
+                        #     inputs = torch.tensor(poses_world.reshape(1,frame_size,-1)).float()
+                        #     outputs = IntentionPredictor.predict(inputs)
+                        #     intention = get_intention(torch.argmax(outputs,1))
+                        #     cv2.putText(masked_frame, f"intention:{intention}", (2, frame.shape[0] - 52), cv2.FONT_HERSHEY_TRIPLEX, 0.4, (255,255,255))
 
                         cv2.putText(masked_frame, "frame: {:.2f}".format(frame_count), (2, frame.shape[0] - 20), cv2.FONT_HERSHEY_TRIPLEX, 0.4, (255,255,255))
-                        landmarks = body.landmarks_world
                         righthand = landmarks[16]
                         rightelbow = landmarks[14]
                         rightshoulder = landmarks[12]
+
+                        # intention prediction based on naive coordinates changes
+                        if righthand[0] < -0.5:
+                            intention = "get long tubes"
+                        elif righthand[0] > 0.3:
+                            intention = "get short tubes"
+                        elif len(traj_queue)==frame_size:
+                            change = 0
+                            for i in range(frame_size-1):
+                                change += abs(traj_queue[i+1]-traj_queue[i]).sum()
+                            if change < 1:
+                                intention = "waiting"
+                            else:
+                                intention = ""
+                        else:
+                            intention = ""
+                        old_upperbody = upperbody
+                        
+                        cv2.putText(masked_frame, f"intention:{intention}", (2, frame.shape[0] - 52), cv2.FONT_HERSHEY_TRIPLEX, 0.4, (255,255,255))
                         cv2.putText(masked_frame, "right hand x: {:.2f}, y: {:.2f}, z: {:.2f}".format(landmarks[16,0],landmarks[16,1],landmarks[16,2]), (2, frame.shape[0] - 36), cv2.FONT_HERSHEY_TRIPLEX, 0.4, (255,255,255))
                         traj.append(body)
                         video_out.write(masked_frame)

@@ -68,7 +68,9 @@ if __name__ == '__main__':
     print(f"length of dataset:{len(dataset)}")
     print("accuracy: {:.2f}%".format((1 - count) * 100))
     print(f"loss:{losses/len(dataset)}")
+    print("dataset.weights")
     print(dataset.weights)
+    print("error:")
     error = [error[i]*dataset.weights[i] for i in range(len(dataset.weights))]
     print(error)
             

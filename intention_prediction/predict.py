@@ -11,7 +11,7 @@ from DLinear import Model
 
 class Args:
     def __init__(self,**kwargs):
-        self.default = {"frame_window":5,"class_num":5,"individual":False,"channels":15*3,"half_body":False,"epochs":80}
+        self.default = {"frame_window":5,"class_num":5,"individual":False,"channels":15*3,"half_body":False,"epochs":40}
         for key in ('frame_window', 'class_num', 'individual', 'channels','half_body','epochs'):
             if key in kwargs and\
                 kwargs[key]:
