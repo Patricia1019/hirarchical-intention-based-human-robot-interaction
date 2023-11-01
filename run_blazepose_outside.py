@@ -12,8 +12,8 @@ import torch
 import multiprocessing
 
 FILE_DIR = Path(__file__).parent
-sys.path.append(f"{FILE_DIR}/controller")
-from move_and_grip import receiver
+# sys.path.append(f"{FILE_DIR}/controller")
+# from move_and_grip import receiver
 sys.path.append(f'{FILE_DIR}/depthai_blazepose')
 from BlazeposeRenderer import BlazeposeRenderer
 from BlazeposeDepthaiEdge_module_outside import BlazeposeDepthaiModule
@@ -351,13 +351,13 @@ if __name__ == '__main__':
     parent_conn, child_conn = multiprocessing.Pipe()
     # creating new processes 
     # p1 = multiprocessing.Process(target=sender, args=(parent_conn,args)) 
-    p2 = multiprocessing.Process(target=receiver, args=(child_conn,))
+    # p2 = multiprocessing.Process(target=receiver, args=(child_conn,))
     # p1.start()
-    p2.start()
+    # p2.start()
     sender(parent_conn,args)
     # wait until processes finish 
     # p1.join() 
-    p2.join() 
+    # p2.join() 
 
 
     # msg = multiprocessing.Value('i')
