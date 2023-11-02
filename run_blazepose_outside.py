@@ -10,6 +10,8 @@ import argparse
 import pickle
 import torch
 import multiprocessing
+import rospy
+from std_msgs.msg import String
 
 FILE_DIR = Path(__file__).parent
 # sys.path.append(f"{FILE_DIR}/controller")
@@ -50,8 +52,14 @@ def get_intention(index):
             return key
     return "no action"
 
+def send_intention_to_ros(intention):
+    pub = rospy.Publisher('chatter', String, queue_size=10)
+    rospy.init_node('intention', anonymous=True)
+    rospy.loginfo(intention)
+    pub.publish(intention)
 
-def sender(conn,args):
+
+def intention_sender(args):
     show = args.show
     task = args.task
     syncNN = args.syncNN
@@ -218,9 +226,6 @@ def sender(conn,args):
                 cv2.imshow("preview", frame)
 
                 if cv2.waitKey(1) == ord('q'):
-                    conn.send("break")
-                    conn.close() 
-                    # conn.value = 0
                     break
         
             elif send_flag == 1 and show: # send to pose estimation model
@@ -296,9 +301,10 @@ def sender(conn,args):
                             intention = ""
                         old_upperbody = upperbody
                         
+
                         if intention:
-                            conn.send(intention)
-                            # conn.value = 1
+                            send_intention_to_ros(intention)
+
                         cv2.putText(masked_frame, f"intention:{intention}", (2, frame.shape[0] - 52), cv2.FONT_HERSHEY_TRIPLEX, 0.4, (255,255,255))
                         cv2.putText(masked_frame, "right hand x: {:.2f}, y: {:.2f}, z: {:.2f}".format(landmarks[16,0],landmarks[16,1],landmarks[16,2]), (2, frame.shape[0] - 36), cv2.FONT_HERSHEY_TRIPLEX, 0.4, (255,255,255))
                         traj.append(body)
@@ -307,9 +313,6 @@ def sender(conn,args):
                     cv2.imshow("preview", masked_frame)
 
                     if cv2.waitKey(1) == ord('q'):
-                        conn.send("break")
-                        conn.close() 
-                        # conn.value = 0
                         break
                 
                 else:
@@ -347,28 +350,8 @@ if __name__ == '__main__':
     parser.add_argument('--frame_size', default=5,
                     help="traj frame size to send into intention prediction module")
     args = parser.parse_args()
-    
-    parent_conn, child_conn = multiprocessing.Pipe()
-    # creating new processes 
-    # p1 = multiprocessing.Process(target=sender, args=(parent_conn,args)) 
-    # p2 = multiprocessing.Process(target=receiver, args=(child_conn,))
-    # p1.start()
-    # p2.start()
-    sender(parent_conn,args)
-    # wait until processes finish 
-    # p1.join() 
-    # p2.join() 
 
-
-    # msg = multiprocessing.Value('i')
-    # p2 = multiprocessing.Process(target=receiver, args=(msg,))
-    # p2.start()
-    # p2.join()
-    # sender(msg,args)
-
+    intention_sender(args)
 
                                                                                                                                             
-                                                                                                                                            
-
-
-
+                                                                                                                                        
