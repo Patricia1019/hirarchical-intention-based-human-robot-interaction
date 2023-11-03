@@ -19,6 +19,8 @@ import pdb
 parser = argparse.ArgumentParser()
 parser.add_argument('--task', default="test",
                     help="name for traj.pkl and camera video")
+parser.add_argument('--input_type', default="images",
+                    help="type for inputs")
 args = parser.parse_args()
 task = args.task
 ROOT_DIR = f'{FILE_DIR}/{task[:-3]}'
@@ -92,7 +94,7 @@ def read_video(filename, fps=None, skip=0, limit=-1):
             break
 
 def render(poses, output, skeleton=Skeleton(), fps=6, bitrate=30000, azim=np.array(70., dtype=np.float32), \
-           viewport=(1000, 1002),limit=-1, downsample=1, size=5, input_video_path=None, input_video_skip=0):
+           viewport=(1000, 1002),limit=-1, downsample=1, size=5, task=None, input_video_skip=0,input_type=None):
     plt.ioff()
     fig = plt.figure(figsize=(size * (1 + len(poses)), size))
     ax_in = fig.add_subplot(1, 1 + len(poses), 1)
@@ -125,15 +127,23 @@ def render(poses, output, skeleton=Skeleton(), fps=6, bitrate=30000, azim=np.arr
         trajectories.append(data[:, 0, [0, 1]])
     poses = list(poses.values())
 
-    # Decode video
-    if input_video_path is None:
-        # Black background
-        all_frames = np.zeros((poses[0].shape[0], viewport[1], viewport[0]), dtype='uint8')
-    else:
-        # Load video using ffmpeg
-        all_frames = []
+    # Decode video or images
+    all_frames = []
+    if input_type == "video":
+        input_video_path = f'{ROOT_DIR}/{task}_camera_out.mp4'
         for f in read_video(input_video_path, fps=None, skip=input_video_skip):
             all_frames.append(f)
+    elif input_type == "images":
+        input_image_path = f'{ROOT_DIR}/images'
+        images = os.listdir(input_image_path)
+        images.sort(key=lambda x:int(x[:-4]))
+        for img in images:
+            all_frames.append(cv2.imread(f'{input_image_path}/{img}'))
+    else:
+        print("Invalid Input! Using black background!")
+        # Black background
+        all_frames = np.zeros((poses[0].shape[0], viewport[1], viewport[0]), dtype='uint8')
+
 
     if downsample > 1:
         # keypoints = downsample_tensor(keypoints, downsample)
@@ -231,5 +241,5 @@ poses_world = camera_to_world(poses_norm)
 poses_world[:, :, 2] -= np.min(poses_world[:, :, 2])
 np.save(f'{ROOT_DIR}/{task}.npy',poses_world)
 predictions = {"ours":poses_world}
-render(predictions,f'{ROOT_DIR}/{task}.mp4',input_video_path=f'{ROOT_DIR}/{task}_camera_out.mp4')
+render(predictions,f'{ROOT_DIR}/{task}.mp4',task=task,input_type=args.input_type)
 print("ok")

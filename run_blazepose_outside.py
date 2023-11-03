@@ -64,6 +64,7 @@ def intention_sender(args):
     task = args.task
     syncNN = args.syncNN
     frame_size = args.frame_size
+    video = args.video
     ROOT_DIR = f'{FILE_DIR}/human_traj/{task[:-3]}'
     if not os.path.exists(ROOT_DIR):
         os.mkdir(ROOT_DIR)
@@ -178,9 +179,10 @@ def intention_sender(args):
     color = (255, 255, 255)
     traj = []
     #  定义编解码器并创建VideoWriter对象
-    fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-    pose_fps = 8
-    video_out = cv2.VideoWriter(f'{ROOT_DIR}/{task}_camera_out.mp4', fourcc, pose_fps, (img_w,img_h))
+    if video:
+        fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+        pose_fps = 8
+        video_out = cv2.VideoWriter(f'{ROOT_DIR}/{task}_camera_out.mp4', fourcc, pose_fps, (img_w,img_h))
     frame_count = 0
     traj_queue = []
     # IntentionPredictor = IntentionPredictor()
@@ -205,7 +207,7 @@ def intention_sender(args):
                             nearest_dist = detection.spatialCoordinates.z
                             nearest_person = detection
             
-            if send_flag == 0 and show:
+            if send_flag == 0:
                 # print(f'detection{counter}')
                 for detection in detections:
                     if detection.label == 15 and detection.confidence > 0.6:
@@ -223,12 +225,13 @@ def intention_sender(args):
                         cv2.rectangle(frame, (x1, y1), (x2, y2), (255, 0, 0), cv2.FONT_HERSHEY_SIMPLEX)
 
                 cv2.putText(frame, "NN fps: {:.2f}".format(fps), (2, frame.shape[0] - 4), cv2.FONT_HERSHEY_TRIPLEX, 0.4, (255,255,255))
-                cv2.imshow("preview", frame)
+                if show:
+                    cv2.imshow("preview", frame)
 
                 if cv2.waitKey(1) == ord('q'):
                     break
         
-            elif send_flag == 1 and show: # send to pose estimation model
+            elif send_flag == 1: # send to pose estimation model
                 assert nearest_person
                 mask = np.zeros(frame.shape[:2], dtype="uint8")
                 # pdb.set_trace()
@@ -308,9 +311,14 @@ def intention_sender(args):
                         cv2.putText(masked_frame, f"intention:{intention}", (2, frame.shape[0] - 52), cv2.FONT_HERSHEY_TRIPLEX, 0.4, (255,255,255))
                         cv2.putText(masked_frame, "right hand x: {:.2f}, y: {:.2f}, z: {:.2f}".format(landmarks[16,0],landmarks[16,1],landmarks[16,2]), (2, frame.shape[0] - 36), cv2.FONT_HERSHEY_TRIPLEX, 0.4, (255,255,255))
                         traj.append(body)
-                        video_out.write(masked_frame)
-
-                    cv2.imshow("preview", masked_frame)
+                        if not video:
+                            if not os.path.exists(f'{ROOT_DIR}/images'):
+                                os.mkdir(f'{ROOT_DIR}/images')
+                            cv2.imwrite(f'{ROOT_DIR}/images/{frame_count}.png',masked_frame)
+                        else:
+                            video_out.write(masked_frame)
+                    if show:
+                        cv2.imshow("preview", masked_frame)
 
                     if cv2.waitKey(1) == ord('q'):
                         break
@@ -349,6 +357,8 @@ if __name__ == '__main__':
                     help="name for traj.pkl and camera video")
     parser.add_argument('--frame_size', default=5,
                     help="traj frame size to send into intention prediction module")
+    parser.add_argument('--video', action="store_true",
+                    help="save video, else save images")
     args = parser.parse_args()
 
     intention_sender(args)

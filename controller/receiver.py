@@ -22,9 +22,14 @@ def controller(data):
     if intention == "get long tubes":
         print(intention)
         kinova_control_msg = PoseStamped()
-        waypoints = (0.3,-0.3,0.2,0.0,-0.707,-0.707,0.0)
-        kinova_control_msg.pose = ComposePoseFromTransQuat(waypoints)
-        kinova_control_pub.publish(kinova_control_msg)
+        waypointsDefinition=[   (0.13,0.001,0.209,0.0246653,0.7066765, 0.7066769, 0.024653),
+                                (0.13,   0.278,  0.209,  0.0246043, 0.7066971, 0.7066575, 0.024677),
+                                (-0.26, 0.260, 0.209, 0.024673, 0.7067194, 0.7066335, 0.0246577),
+                                (-0.26, 0.260, -0.045, 0.0248318, 0.7066706, 0.7066775, 0.0246345)]
+        for waypoints in waypointsDefinition:
+            # waypoints = (-0.26, 0.260, -0.045,0.0248318, 0.7066706, 0.7066775, 0.0246345)
+            kinova_control_msg.pose = ComposePoseFromTransQuat(waypoints)
+            kinova_control_pub.publish(kinova_control_msg)
 
     
 def listener():
