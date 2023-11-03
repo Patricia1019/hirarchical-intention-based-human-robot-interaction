@@ -134,7 +134,7 @@ def render(poses, output, skeleton=Skeleton(), fps=6, bitrate=30000, azim=np.arr
         for f in read_video(input_video_path, fps=None, skip=input_video_skip):
             all_frames.append(f)
     elif input_type == "images":
-        input_image_path = f'{ROOT_DIR}/images'
+        input_image_path = f'{ROOT_DIR}/images{task[-3:]}'
         images = os.listdir(input_image_path)
         images.sort(key=lambda x:int(x[:-4]))
         for img in images:

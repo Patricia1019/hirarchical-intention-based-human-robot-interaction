@@ -312,9 +312,9 @@ def intention_sender(args):
                         cv2.putText(masked_frame, "right hand x: {:.2f}, y: {:.2f}, z: {:.2f}".format(landmarks[16,0],landmarks[16,1],landmarks[16,2]), (2, frame.shape[0] - 36), cv2.FONT_HERSHEY_TRIPLEX, 0.4, (255,255,255))
                         traj.append(body)
                         if not video:
-                            if not os.path.exists(f'{ROOT_DIR}/images'):
-                                os.mkdir(f'{ROOT_DIR}/images')
-                            cv2.imwrite(f'{ROOT_DIR}/images/{frame_count}.png',masked_frame)
+                            if not os.path.exists(f'{ROOT_DIR}/images{task[-3:]}'):
+                                os.mkdir(f'{ROOT_DIR}/images{task[-3:]}')
+                            cv2.imwrite(f'{ROOT_DIR}/images{task[-3:]}/{frame_count}.png',masked_frame)
                         else:
                             video_out.write(masked_frame)
                     if show:
@@ -338,7 +338,8 @@ def intention_sender(args):
     file = open(f'{ROOT_DIR}/{task}.pkl', 'wb')
     pickle.dump(traj, file)
     file.close()
-    video_out.release()
+    if video:
+        video_out.release()
 
     device.close()
 
