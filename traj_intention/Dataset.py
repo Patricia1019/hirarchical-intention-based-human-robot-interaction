@@ -9,7 +9,7 @@ import pdb
 
 INTENTION_LIST = {"no action":0, "get_connectors":1,"get_screws":2,"get_wheels":3}
 class MyDataset(Dataset):
-    def __init__(self, json_file, root_dir, args,type="train",transform=None):
+    def __init__(self, json_file, root_dir, args,type="train",transform=None,test_whole=True):
         self.json_file = json_file
         self.transform = transform
         self.root_dir = root_dir
@@ -17,6 +17,7 @@ class MyDataset(Dataset):
         self.pred_len = args.pred_len
         self.channels = args.channels
         self.type = type
+        self.test_whole = test_whole
         self.half_body = args.half_body
         self.intention_list = INTENTION_LIST
         self.data,self.weights = self.process_json()
@@ -31,6 +32,8 @@ class MyDataset(Dataset):
             intention_tasks = data_cut_points[intention]
             intention_label = self.intention_list[intention]
             for task in intention_tasks.keys():
+                if not self.test_whole and 'build_cars' in task:
+                    continue
                 points = intention_tasks[task]
                 npy_file = np.load(f'{self.root_dir}/{task[:-3]}/{task}.npy')
                 npy_file = np.concatenate((npy_file[:,11:25,:],npy_file[:,0:1,:]),axis=1)
