@@ -8,11 +8,12 @@ import cv2
 import pdb
 
 from DLinear import Model
+from Dataset import INTENTION_LIST
 
 class Args:
     def __init__(self,**kwargs):
-        self.default = {"frame_window":5,"class_num":5,"individual":False,"channels":15*3,"half_body":False,"epochs":40}
-        for key in ('frame_window', 'class_num', 'individual', 'channels','half_body','epochs'):
+        self.default = {"seq_len":5,"pred_len":5,"class_num":4,"individual":False,"channels":15*3,"half_body":False,"epochs":40}
+        for key in ('seq_len','pred_len', 'class_num', 'individual', 'channels','half_body','epochs'):
             if key in kwargs and\
                 kwargs[key]:
                     setattr(self, key, kwargs[key])
@@ -27,13 +28,21 @@ class IntentionPredictor:
         if ckpt_path:
             checkpoint = torch.load(ckpt_path)
         else: # default
-            checkpoint = torch.load(f'{FILE_DIR}/checkpoints/trail{args.epochs}.pth')
+            checkpoint = torch.load(f'{FILE_DIR}/checkpoints/seq{args.seq_len}_pred{args.pred_len}_epoch{args.epochs}_whole.pth')
         self.model.load_state_dict(checkpoint)
         self.model.eval()
 
-    def predict(self,poses):
-        outputs = self.model(poses)
-        return outputs
+    def predict(self,poses,restrict):
+        pred_traj,pred_intention = self.model(poses)
+        if pred_intention != INTENTION_LIST["no action"]:
+            if restrict == "working_area":
+                if pred_intention == INTENTION_LIST["get connectors"]:
+                    pass # TODO
+            else:
+                intention = pred_intention
+        else:
+            intention = pred_intention
+        return pred_traj,intention
 
 if __name__ == '__main__':
     predictor = IntentionPredictor()

@@ -40,6 +40,8 @@ if __name__ == '__main__':
                         help='whether to extract only half body keypoints') 
     parser.add_argument('--test_whole', action="store_true",
                         help='whether to test on build_cars tasks') 
+    parser.add_argument('--retrict', type=str,default="working_area",
+                        help='four options:[no,working_area,ood,all]') 
     parser.add_argument('--epochs', type=int, default=40) 
     args = parser.parse_args()
 
