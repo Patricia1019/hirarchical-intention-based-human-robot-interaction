@@ -44,7 +44,7 @@ if __name__ == '__main__':
     model.load_state_dict(checkpoint)
     model.eval()
 
-    dataset = MyDataset(JSON_FILE,ROOT_DIR,args,type="train")
+    dataset = MyDataset(JSON_FILE,ROOT_DIR,args,type="test")
     dataloader = DataLoader(dataset, batch_size=2, shuffle=True)
 
     class_criterion = torch.nn.CrossEntropyLoss(weight=dataset.weights)

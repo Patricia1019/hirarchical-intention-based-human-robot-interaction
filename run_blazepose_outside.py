@@ -19,7 +19,7 @@ FILE_DIR = Path(__file__).parent
 sys.path.append(f'{FILE_DIR}/depthai_blazepose')
 from BlazeposeRenderer import BlazeposeRenderer
 from BlazeposeDepthaiEdge_module_outside import BlazeposeDepthaiModule
-sys.path.append(f'{FILE_DIR}/intention_prediction')
+sys.path.append(f'{FILE_DIR}/traj_intention')
 from predict import IntentionPredictor
 from Dataset import INTENTION_LIST
 
