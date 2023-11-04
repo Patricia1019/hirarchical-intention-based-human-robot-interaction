@@ -8,12 +8,16 @@ import cv2
 from tqdm import tqdm
 import json
 from torch.utils.data import DataLoader
+import matplotlib
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
+from sklearn import metrics
 import pdb
 
 from DLinear import Model
 from Dataset import MyDataset, INTENTION_LIST
 
-
+os.environ["DISPLAY"]=":0"
 if __name__ == '__main__':
     ROOT_DIR = f'{FILE_DIR}/../human_traj'
     JSON_FILE = f'{ROOT_DIR}/cut_traj_new.json'
@@ -54,6 +58,8 @@ if __name__ == '__main__':
     count = 0
     losses = 0
     error = [0]*args.class_num
+    intention_list = []
+    labels_list = []
     for batch in tqdm(dataloader):
         inputs,target_traj,labels = batch
         pred_traj,pred_intention = model(inputs)
@@ -69,8 +75,30 @@ if __name__ == '__main__':
                 error[labels[1]] += 1
         traj_loss = traj_criterion(pred_traj,target_traj)
         intention_loss = class_criterion(pred_intention, labels)
+        for intention in pred_intention:
+            intention_list.append(torch.argmax(intention).item())
+        for label in labels:
+            labels_list.append(label.item())
         loss = traj_loss + intention_loss
         losses += loss.item()
+
+    intention_list = np.array(intention_list)
+    labels_list = np.array(labels_list)
+    confusion_matrix = metrics.confusion_matrix(intention_list, labels_list)
+    confusion_matrix_norm = confusion_matrix/confusion_matrix.sum(1)
+    cm_display_norm = metrics.ConfusionMatrixDisplay(confusion_matrix = confusion_matrix_norm, display_labels = ["no action","connectors","screws","wheels"])
+    cm_display_norm.plot()
+    if args.test_whole:
+        plt.savefig(f'./cm_norm_test_whole.png', bbox_inches = 'tight')
+    else:
+        plt.savefig(f'./cm_norm_not_test_whole.png', bbox_inches = 'tight')
+    plt.close()
+    cm_display = metrics.ConfusionMatrixDisplay(confusion_matrix = confusion_matrix, display_labels = ["no action","connectors","screws","wheels"])
+    cm_display.plot()
+    if args.test_whole:
+        plt.savefig(f'./cm_test_whole.jpg', bbox_inches = 'tight')
+    else:
+        plt.savefig(f'./cm_not_test_whole.jpg', bbox_inches = 'tight')
     count = count / len(dataset)
     print(f"length of dataset:{len(dataset)}")
     print("accuracy: {:.2f}%".format((1 - count) * 100))
@@ -80,7 +108,7 @@ if __name__ == '__main__':
     print("error:")
     error = [error[i]*dataset.weights[i] for i in range(len(dataset.weights))]
     for key,value in INTENTION_LIST.items():
-        print(f"{key}: {error[value].item()}")
+        print(f"{key}: {error[value]}")
     # print(error)
             
 
