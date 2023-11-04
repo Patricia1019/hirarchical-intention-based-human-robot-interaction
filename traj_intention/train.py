@@ -35,6 +35,8 @@ if __name__ == '__main__':
     parser.add_argument('--half_body', type=int, default=False, 
                         help='whether to extract only half body keypoints') 
     parser.add_argument('--batch_size', type=int, default=2) 
+    parser.add_argument('--test_whole', action="store_true",
+                        help='whether to test on build_cars tasks') 
     parser.add_argument('--epochs', type=int, default=40) 
     args = parser.parse_args()
 
@@ -43,7 +45,7 @@ if __name__ == '__main__':
     net = Model(args)
 
     batch_size = args.batch_size
-    dataset = MyDataset(JSON_FILE,ROOT_DIR,args,type="train")
+    dataset = MyDataset(JSON_FILE,ROOT_DIR,args,type="train",test_whole=args.test_whole)
     dataloader = DataLoader(dataset, batch_size=batch_size,shuffle=True)
 
     class_criterion = torch.nn.CrossEntropyLoss(weight=dataset.weights)
@@ -66,7 +68,9 @@ if __name__ == '__main__':
             count += 1
                 
         print(f'Epoch {epoch + 1}, Loss: {running_loss / count}')
-    
-    torch.save(net.state_dict(), f'{FILE_DIR}/checkpoints/seq{args.seq_len}_pred{args.pred_len}_epoch{epochs}.pth')
+    if args.test_whole:
+        torch.save(net.state_dict(), f'{FILE_DIR}/checkpoints/seq{args.seq_len}_pred{args.pred_len}_epoch{epochs}_whole.pth')
+    else:
+        torch.save(net.state_dict(), f'{FILE_DIR}/checkpoints/seq{args.seq_len}_pred{args.pred_len}_epoch{epochs}_not_whole.pth')
     
 
