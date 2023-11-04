@@ -46,10 +46,10 @@ if __name__ == '__main__':
     if args.half_body:
         args.channels = 10*3
     model = Model(args)
-    if not args.test_whole:
-        checkpoint = torch.load(f'{FILE_DIR}/checkpoints/seq{args.seq_len}_pred{args.pred_len}_epoch{args.epochs}_not_whole.pth')
-    else:
-        checkpoint = torch.load(f'{FILE_DIR}/checkpoints/seq{args.seq_len}_pred{args.pred_len}_epoch{args.epochs}_whole.pth')
+    # if not args.test_whole:
+    #     checkpoint = torch.load(f'{FILE_DIR}/checkpoints/seq{args.seq_len}_pred{args.pred_len}_epoch{args.epochs}_not_whole.pth')
+    # else:
+    checkpoint = torch.load(f'{FILE_DIR}/checkpoints/seq{args.seq_len}_pred{args.pred_len}_epoch{args.epochs}_whole.pth')
     model.load_state_dict(checkpoint)
     model.eval()
 
