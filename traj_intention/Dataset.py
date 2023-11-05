@@ -7,7 +7,7 @@ from pathlib import Path
 FILE_DIR = Path(__file__).resolve().parent
 import pdb
 
-INTENTION_LIST = {"no action":0, "get_connectors":1,"get_screws":2,"get_wheels":3}
+INTENTION_LIST = {"no_action":0, "get_connectors":1,"get_screws":2,"get_wheels":3}
 class MyDataset(Dataset):
     def __init__(self, json_file, root_dir, args,type="train",transform=None,test_whole=True):
         self.json_file = json_file

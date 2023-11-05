@@ -81,14 +81,14 @@ if __name__ == '__main__':
     labels_list = np.array(labels_list)
     confusion_matrix = metrics.confusion_matrix(intention_list, labels_list)
     confusion_matrix_norm = confusion_matrix/confusion_matrix.sum(1)
-    cm_display_norm = metrics.ConfusionMatrixDisplay(confusion_matrix = confusion_matrix_norm, display_labels = ["no action","connectors","screws","wheels"])
+    cm_display_norm = metrics.ConfusionMatrixDisplay(confusion_matrix = confusion_matrix_norm, display_labels = ["no_action","connectors","screws","wheels"])
     cm_display_norm.plot()
     if args.test_whole:
         plt.savefig(f'{FILE_DIR}/results/cm_norm_test_whole_{args.restrict}_restrict.jpg', bbox_inches = 'tight')
     else:
         plt.savefig(f'{FILE_DIR}/results/cm_norm_not_test_whole_{args.restrict}_restrict.jpg', bbox_inches = 'tight')
     plt.close()
-    cm_display = metrics.ConfusionMatrixDisplay(confusion_matrix = confusion_matrix, display_labels = ["no action","connectors","screws","wheels"])
+    cm_display = metrics.ConfusionMatrixDisplay(confusion_matrix = confusion_matrix, display_labels = ["no_action","connectors","screws","wheels"])
     cm_display.plot()
     if args.test_whole:
         plt.savefig(f'{FILE_DIR}/results/cm_test_whole_{args.restrict}_restrict.jpg', bbox_inches = 'tight')

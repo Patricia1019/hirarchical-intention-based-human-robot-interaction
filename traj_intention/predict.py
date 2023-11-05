@@ -71,7 +71,7 @@ class IntentionPredictor:
 
         if working_area_flag:
             intention = batch_intention[0]
-            if intention != INTENTION_LIST["no action"]:
+            if intention != INTENTION_LIST["no_action"]:
                 # concate_traj = torch.cat((poses,pred_traj),1).view(poses.shape[0],-1,poses.shape[-1]//3,3)
                 concate_traj = poses.view(poses.shape[0],-1,poses.shape[-1]//3,3)
                 if intention == INTENTION_LIST["get_connectors"]:
@@ -81,7 +81,7 @@ class IntentionPredictor:
                     # sum_[0] += 1
                     if max(right_wrist_traj[0]) < -1.5: # TODO
                         print("modifying connectors!")
-                        batch_intention[0] = INTENTION_LIST["no action"]
+                        batch_intention[0] = INTENTION_LIST["no_action"]
                 elif intention == INTENTION_LIST["get_screws"]:
                     index1 = SKELETON_LIST["right_wrist"]
                     index2 = SKELETON_LIST["left_wrist"]
@@ -90,7 +90,7 @@ class IntentionPredictor:
                     # count[1] += right_wrist_traj.mean().item()
                     # sum_[1] += 1
                     if min(right_wrist_traj[0]) > -1 and min(left_wrist_traj[0]) > -1: # TODO
-                        batch_intention[0] = INTENTION_LIST["no action"]
+                        batch_intention[0] = INTENTION_LIST["no_action"]
                         print("modifying screws!")
                         # pdb.set_trace()
                 elif intention == INTENTION_LIST["get_wheels"]:
@@ -101,7 +101,7 @@ class IntentionPredictor:
                     # sum_[2] += 1
                     # print(right_wrist_traj_z)
                     if min(right_wrist_traj_x[0]) > -1: # TODO
-                        batch_intention[0] = INTENTION_LIST["no action"]
+                        batch_intention[0] = INTENTION_LIST["no_action"]
                         print("modifying wheels!")
                         # pdb.set_trace()
                     elif max(right_wrist_traj_z[0]) < 0.4:
