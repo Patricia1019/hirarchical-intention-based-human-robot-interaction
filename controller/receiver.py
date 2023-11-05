@@ -11,7 +11,7 @@ import pdb
 sys.path.append(f'{FILE_DIR}/../traj_intention')
 from Dataset import INTENTION_LIST
 # from speech import COMMAND_LIST
-COMMAND_LIST = ["stop"]
+COMMAND_LIST = ["stop","short","long","spin","lift"]
 
 
 RETRACT_POSITION = (0.2,0,0.19,0,-0.7,-0.7,0)
@@ -28,27 +28,11 @@ def ComposePoseFromTransQuat(data_frame):
     pose.orientation.z = data_frame[6]
     return pose
 
-def controller(data):
-    intention = data.data
-    # pdb.set_trace()
-    # return intention
-    print(intention)
-    # if intention == "get_connectors":
-    #     print(intention)
-    #     while True:
+class PlanGraph:
+    def __init__(self):
+        self.SHORT_TUBES = 8
+        self.LONG_TUBES = 4
 
-    #     kinova_control_msg = PoseStamped()
-    #     waypointsDefinition=[   (0.2,0,0.19,0,-0.7,-0.7,0),
-    #                             (0.2,0.32,0.19,0,-0.7,-0.7,0),
-    #                             (-0.26,0.32,0.1,0,-0.8,-0.7,0),
-    #                             (-0.26,0.32,-0.05,0,-0.8,-0.7,0)]
-    #     for waypoints in waypointsDefinition:
-    #         print(waypoints)
-    #         kinova_control_msg.pose = ComposePoseFromTransQuat(waypoints)
-    #     # kinova_control_msg.pose = ComposePoseFromTransQuat(waypointsDefinition[1])
-    #     # pdb.set_trace()
-    #         kinova_control_pub.publish(kinova_control_msg)
-    #         time.sleep(5)
 
 class Receiver:
     def __init__(self):
@@ -122,7 +106,7 @@ class Receiver:
         return waypoints_list
 
     def get_command(self):
-        # TODO
+        # TODO: NOT USED
         if len(self.command_list) > 0:
             return self.command_list[-1]
         return ""
