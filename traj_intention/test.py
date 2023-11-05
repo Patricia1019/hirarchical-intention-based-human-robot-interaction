@@ -16,6 +16,7 @@ import pdb
 
 from DLinear import Model
 from Dataset import MyDataset, INTENTION_LIST
+from predict import IntentionPredictor
 
 os.environ["DISPLAY"]=":0"
 if __name__ == '__main__':
@@ -40,7 +41,7 @@ if __name__ == '__main__':
                         help='whether to extract only half body keypoints') 
     parser.add_argument('--test_whole', action="store_true",
                         help='whether to test on build_cars tasks') 
-    parser.add_argument('--retrict', type=str,default="working_area",
+    parser.add_argument('--restrict', type=str,default="working_area",
                         help='four options:[no,working_area,ood,all]') 
     parser.add_argument('--epochs', type=int, default=40) 
     args = parser.parse_args()
@@ -56,36 +57,25 @@ if __name__ == '__main__':
     model.eval()
 
     dataset = MyDataset(JSON_FILE,ROOT_DIR,args,type="test",test_whole=args.test_whole)
-    dataloader = DataLoader(dataset, batch_size=2, shuffle=True)
+    dataloader = DataLoader(dataset, batch_size=1, shuffle=True)
 
-    class_criterion = torch.nn.CrossEntropyLoss(weight=dataset.weights)
-    traj_criterion = torch.nn.MSELoss()
     count = 0
     losses = 0
     error = [0]*args.class_num
     intention_list = []
     labels_list = []
+    predictor = IntentionPredictor()
     for batch in tqdm(dataloader):
         inputs,target_traj,labels = batch
-        pred_traj,pred_intention = model(inputs)
-        gap = 1 if sum(abs(torch.argmax(pred_intention,1)-labels))>0 else 0
+        # pred_traj,pred_intention = model(inputs)
+        pred_traj,pred_intention = predictor.predict(inputs,args.restrict)
+        gap = 1 if sum(abs(pred_intention-labels))>0 else 0
         count += gap
-        if gap == 2:
+        if gap == 1:
             error[labels[0]] += 1
-            error[labels[1]] += 1
-        elif gap == 1:
-            if labels[0] != torch.argmax(pred_intention,1)[0]:
-                error[labels[0]] += 1
-            else:
-                error[labels[1]] += 1
-        traj_loss = traj_criterion(pred_traj,target_traj)
-        intention_loss = class_criterion(pred_intention, labels)
-        for intention in pred_intention:
-            intention_list.append(torch.argmax(intention).item())
-        for label in labels:
-            labels_list.append(label.item())
-        loss = traj_loss + intention_loss
-        losses += loss.item()
+
+        intention_list.append(pred_intention[0].item())
+        labels_list.append(labels[0].item())
 
     intention_list = np.array(intention_list)
     labels_list = np.array(labels_list)
@@ -94,16 +84,16 @@ if __name__ == '__main__':
     cm_display_norm = metrics.ConfusionMatrixDisplay(confusion_matrix = confusion_matrix_norm, display_labels = ["no action","connectors","screws","wheels"])
     cm_display_norm.plot()
     if args.test_whole:
-        plt.savefig(f'{FILE_DIR}/results/cm_norm_test_whole.jpg', bbox_inches = 'tight')
+        plt.savefig(f'{FILE_DIR}/results/cm_norm_test_whole_{args.restrict}_restrict.jpg', bbox_inches = 'tight')
     else:
-        plt.savefig(f'{FILE_DIR}/results/cm_norm_not_test_whole.jpg', bbox_inches = 'tight')
+        plt.savefig(f'{FILE_DIR}/results/cm_norm_not_test_whole_{args.restrict}_restrict.jpg', bbox_inches = 'tight')
     plt.close()
     cm_display = metrics.ConfusionMatrixDisplay(confusion_matrix = confusion_matrix, display_labels = ["no action","connectors","screws","wheels"])
     cm_display.plot()
     if args.test_whole:
-        plt.savefig(f'{FILE_DIR}/results/cm_test_whole.jpg', bbox_inches = 'tight')
+        plt.savefig(f'{FILE_DIR}/results/cm_test_whole_{args.restrict}_restrict.jpg', bbox_inches = 'tight')
     else:
-        plt.savefig(f'{FILE_DIR}/results/cm_not_test_whole.jpg', bbox_inches = 'tight')
+        plt.savefig(f'{FILE_DIR}/results/cm_not_test_whole_{args.restrict}_restrict.jpg', bbox_inches = 'tight')
     count = count / len(dataset)
     print(f"length of dataset:{len(dataset)}")
     print("accuracy: {:.2f}%".format((1 - count) * 100))
