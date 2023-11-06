@@ -72,14 +72,14 @@ class IntentionPredictor:
         if working_area_flag:
             intention = batch_intention[0]
             if intention != INTENTION_LIST["no_action"]:
-                # concate_traj = torch.cat((poses,pred_traj),1).view(poses.shape[0],-1,poses.shape[-1]//3,3)
-                concate_traj = poses.view(poses.shape[0],-1,poses.shape[-1]//3,3)
+                concate_traj = torch.cat((poses,pred_traj),1).view(poses.shape[0],-1,poses.shape[-1]//3,3)
+                # concate_traj = poses.view(poses.shape[0],-1,poses.shape[-1]//3,3)
                 if intention == INTENTION_LIST["get_connectors"]:
                     index = SKELETON_LIST["right_wrist"]
                     right_wrist_traj = concate_traj[:,:,index,0]
                     # count[0] += right_wrist_traj.mean().item()
                     # sum_[0] += 1
-                    if max(right_wrist_traj[0]) < -1.5: # TODO
+                    if max(right_wrist_traj[0]) < -1.2: # TODO
                         print("modifying connectors!")
                         batch_intention[0] = INTENTION_LIST["no_action"]
                 elif intention == INTENTION_LIST["get_screws"]:
@@ -89,7 +89,7 @@ class IntentionPredictor:
                     left_wrist_traj = concate_traj[:,:,index2,0]
                     # count[1] += right_wrist_traj.mean().item()
                     # sum_[1] += 1
-                    if min(right_wrist_traj[0]) > -1 and min(left_wrist_traj[0]) > -1: # TODO
+                    if min(right_wrist_traj[0]) > -1.33 and min(left_wrist_traj[0]) > -1.33: # TODO
                         batch_intention[0] = INTENTION_LIST["no_action"]
                         print("modifying screws!")
                         # pdb.set_trace()
@@ -100,18 +100,18 @@ class IntentionPredictor:
                     # count[2] += right_wrist_traj_y.mean().item()
                     # sum_[2] += 1
                     # print(right_wrist_traj_z)
-                    if min(right_wrist_traj_x[0]) > -1: # TODO
+                    if min(right_wrist_traj_x[0]) > -1.33: # TODO
                         batch_intention[0] = INTENTION_LIST["no_action"]
                         print("modifying wheels!")
                         # pdb.set_trace()
-                    elif max(right_wrist_traj_z[0]) < 0.4:
+                    elif min(right_wrist_traj_z[0]) > 0.8:
                         batch_intention[0] = INTENTION_LIST["get_screws"]
                         print("modifying wheels!")
 
         if ood_flag:
             entropy = Categorical(probs = softmax(pred_intention,dim=1)[0].detach()).entropy()
             if entropy > 0.7:
-                batch_intention[0] = 0
+                batch_intention[0] = INTENTION_LIST["no_action"]
         return pred_traj,batch_intention
 
 if __name__ == '__main__':
