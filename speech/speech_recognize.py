@@ -10,7 +10,11 @@ import webrtcvad
 from threading import Thread
 import os
 from scipy import signal
+from pathlib import Path
+FILE_DIR = Path(__file__).parent
 logging.basicConfig(level=20)
+
+import pdb
 
 class Audio(object):
     """Streams raw audio from microphone. Data is received in a separate thread, and stored in a buffer, to be read from."""
@@ -178,11 +182,16 @@ def main(ARGS):
     # Stream from microphone to DeepSpeech using VAD
     stream_context = model.createStream()
     wav_data = bytearray()
+    count = 0
     for frame in frames:
         if frame is not None:
             logging.debug("streaming frame")
             stream_context.feedAudioContent(np.frombuffer(frame, np.int16))
             if ARGS.savewav: wav_data.extend(frame)
+            partial_transcription = stream_context.intermediateDecode()
+            if len(partial_transcription) > count:
+                count = len(partial_transcription)
+                print(partial_transcription.split()[-1])
         else:
             logging.debug("end utterence")
             if ARGS.savewav:
@@ -230,13 +239,13 @@ if __name__ == '__main__':
     parser.add_argument('-f', '--file',
                         help="Read from .wav file instead of microphone")
 
-    parser.add_argument('-m', '--model', default='../deepspeech-0.9.3-models.pbmm', required=True,
+    parser.add_argument('-m', '--model', default=f'{FILE_DIR}/deepspeech-0.9.3-models.pbmm',
                         help="Path to the model (protocol buffer binary file, or entire directory containing all standard-named files for model)")
-    parser.add_argument('-s', '--scorer', default='../deepspeech-0.9.3-models.scorer',
+    parser.add_argument('-s', '--scorer', default=f'{FILE_DIR}/deepspeech-0.9.3-models.scorer',
                         help="Path to the external scorer file.")
     parser.add_argument('-r', '--rate', type=int, default=DEFAULT_SAMPLE_RATE,
                         help=f"Input device sample rate. Default: {DEFAULT_SAMPLE_RATE}. Your device may require 44100.")
-    parser.add_argument('-d', '--device', type=int, default=None,
+    parser.add_argument('-d', '--device', type=int, default=14,
                         help="Device input index (Int) as listed by pyaudio.PyAudio.get_device_info_by_index(). If not provided, falls back to PyAudio.get_default_device().")
     
 
