@@ -3,6 +3,7 @@ import time
 sys.path.append('../depthai_blazepose')
 from BlazeposeDepthaiEdge import BlazeposeDepthai
 from BlazeposeRenderer import BlazeposeRenderer
+import cv2
 import pdb
 
 if __name__ == '__main__':
@@ -44,5 +45,6 @@ if __name__ == '__main__':
         # 数据预处理
         frame = renderer.draw(frame, body)
         key = renderer.waitKey(delay=1)
+        cv2.imwrite(f'./images/{count}.png',frame)
         if key == 27 or key == ord('q'):
             break

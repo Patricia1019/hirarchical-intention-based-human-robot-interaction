@@ -64,7 +64,7 @@ class Receiver:
             self.execute_action(action)
         
     def execute_action(self,action):
-        waypoints_list = self.generate_waypoints(action)
+        waypoints_list,target_list = self.generate_waypoints(action)
         kinova_control_msg = PoseStamped()
         kinova_control_msg.pose = ComposePoseFromTransQuat(waypoints_list[0])
         kinova_control_pub.publish(kinova_control_msg)
@@ -79,13 +79,14 @@ class Receiver:
                 # self.command_list.pop(-1)
                 self.command = None
                 break
-            if self.reached(current_pose,waypoints_list[i]):
+            if self.reached(current_pose,target_list[i]):
                 i += 1
                 if i < len(waypoints_list):
                     kinova_control_msg.pose = ComposePoseFromTransQuat(waypoints_list[i])
                     kinova_control_pub.publish(kinova_control_msg)
                 else:
-                    break
+                    kinova_control_msg.pose = ComposePoseFromTransQuat(target_list[i-1])
+                    kinova_control_pub.publish(kinova_control_msg)
         return
     
     def generate_waypoints(self,action):
@@ -93,17 +94,29 @@ class Receiver:
         if action[0] == "get_short_tubes":
             retract = RETRACT_POSITION
             ready = (0.2,0.32,0.19,0,-0.7,-0.7,0)
+            # ready_way = (0.2,0.32+0.18,0.19,0,-0.7,-0.7,0)
             x_interval = 0.08
             y_interval = 0.15
             row = action[1]%2
             col = action[1]//2
             get = (-0.26-x_interval*col,0.28-y_interval*row,0.1,0,-0.8,-0.7,0)
             grip = (-0.26-x_interval*col,0.28-y_interval*row,-0.05,0,-0.8,-0.7,0)
+            # grip_way = (-0.26-x_interval*col,0.28-y_interval*row,-0.1,0,-0.8,-0.7,0)
             deliver = (0.3,0.3,0.19,0,-0.7,-0.3,-0.1) # TODO: move with hand
             # [retract,ready,get,grip,(close gripper),get,ready,deliver,(open gripper),retract]
-            waypoints_list = [retract,ready,get,grip,get,ready,deliver,retract]
+            # waypoints_list = [retract,ready_way,get,grip_way,get,ready_way,deliver,retract]
+            target_list = [retract,ready,get,grip,get,ready,deliver,retract]
+            waypoints_list = []
+            for i in range(len(target_list)):
+                if i == 0:
+                    waypoints_list.append(target_list[i])
+                if i > 0:
+                    tmp = []
+                    for j in range(len(target_list[i])):
+                        tmp.append(target_list[i][j]+0.7*(target_list[i][j]-target_list[i-1][j]))
+                    waypoints_list.append(tmp)
         # TODO: other actions
-        return waypoints_list
+        return waypoints_list,target_list
 
     def get_command(self):
         # TODO: NOT USED
@@ -124,11 +137,13 @@ class Receiver:
             # print(f"pos_gap:{pos_gap}")
             return False
         else:
-            w,x,y,z = current_pose[3],current_pose[4],current_pose[5],current_pose[6]
+            w,x,y,z = target_pose[3],target_pose[4],target_pose[5],target_pose[6]
             sqrt_sum = (w**2+x**2+y**2+z**2)**0.5
             w,x,y,z = w/sqrt_sum,x/sqrt_sum,y/sqrt_sum,z/sqrt_sum
-            quat_gap = abs(abs(w)-abs(target_pose[3]))+abs(abs(x)-abs(target_pose[4]))+abs(abs(y)-abs(target_pose[5]))+abs(abs(z)-abs(target_pose[6]))
-            if quat_gap < 0.4:
+            quat_gap = 1 - (w*current_pose[3]+x*current_pose[4]+y*current_pose[5]+z*current_pose[6])**2
+            print(quat_gap)
+            if quat_gap < 0.05:
+                # print(f"quat_gap:{quat_gap}")
                 return True
             else:
                 # print(f"quat_gap:{quat_gap}")

@@ -80,7 +80,8 @@ if __name__ == '__main__':
     intention_list = np.array(intention_list)
     labels_list = np.array(labels_list)
     confusion_matrix = metrics.confusion_matrix(labels_list,intention_list)
-    confusion_matrix_norm = confusion_matrix/confusion_matrix.sum(1)
+    confusion_matrix_norm = metrics.confusion_matrix(labels_list,intention_list,normalize='true')
+    # confusion_matrix_norm = confusion_matrix/confusion_matrix.sum(1)
     cm_display_norm = metrics.ConfusionMatrixDisplay(confusion_matrix = confusion_matrix_norm, display_labels = ["no_action","connectors","screws","wheels"])
     cm_display_norm.plot()
     if args.test_whole:
