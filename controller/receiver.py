@@ -76,8 +76,10 @@ class Receiver:
             # pdb.set_trace()
             if command == "stop":
                 print(command)
-                # self.command_list.pop(-1)
+                self.retract(current_pose,target_list,i)
                 self.command = None
+                # kinova_control_msg.pose = ComposePoseFromTransQuat(current_pose)
+                # kinova_control_pub.publish(kinova_control_msg)
                 break
             if self.reached(current_pose,target_list[i]):
                 i += 1
@@ -89,6 +91,42 @@ class Receiver:
                     kinova_control_pub.publish(kinova_control_msg)
         return
     
+    def retract(self,current_pose,ori_targets,index):
+        kinova_control_msg = PoseStamped()
+        kinova_control_msg.pose = ComposePoseFromTransQuat(current_pose)
+        kinova_control_pub.publish(kinova_control_msg)
+        target_list = ori_targets[:index][::-1]
+        waypoints_list = []
+        for i in range(len(target_list)):
+            if i == 0:
+                tmp = []
+                for j in range(len(target_list[i])):
+                    tmp.append(target_list[i][j]+0.7*(target_list[i][j]-current_pose[j]))
+                waypoints_list.append(tmp)
+            if i > 0:
+                tmp = []
+                for j in range(len(target_list[i])):
+                    tmp.append(target_list[i][j]+0.7*(target_list[i][j]-target_list[i-1][j]))
+                waypoints_list.append(tmp)
+        # pdb.set_trace()
+        i = 0
+        kinova_control_msg = PoseStamped()
+        kinova_control_msg.pose = ComposePoseFromTransQuat(waypoints_list[0])
+        kinova_control_pub.publish(kinova_control_msg)
+        # pdb.set_trace()
+        while i < len(waypoints_list):
+            current_pose = self.current_pose
+            if self.reached(current_pose,target_list[i]):
+                print("reached")
+                i += 1
+                if i < len(waypoints_list):
+                    kinova_control_msg.pose = ComposePoseFromTransQuat(waypoints_list[i])
+                    kinova_control_pub.publish(kinova_control_msg)
+                else:
+                    kinova_control_msg.pose = ComposePoseFromTransQuat(target_list[i-1])
+                    kinova_control_pub.publish(kinova_control_msg)
+        return
+   
     def generate_waypoints(self,action):
         waypoints_list = []
         if action[0] == "get_short_tubes":
