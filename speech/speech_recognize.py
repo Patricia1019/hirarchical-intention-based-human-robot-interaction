@@ -13,6 +13,8 @@ from scipy import signal
 from pathlib import Path
 FILE_DIR = Path(__file__).parent
 logging.basicConfig(level=20)
+import rospy
+from std_msgs.msg import String
 
 import pdb
 
@@ -156,6 +158,16 @@ class VADAudio(Audio):
                     yield None
                     ring_buffer.clear()
 
+def send_command_to_ros(command="stop"):
+    pub = rospy.Publisher('chatter', String, queue_size=10)
+    rospy.init_node('command', anonymous=True)
+    rospy.loginfo(command)
+    rate = rospy.Rate(10) # 10hz
+    pub.publish(command)
+    rate.sleep()
+    rospy.loginfo(command)
+    pub.publish(command)
+
 def main(ARGS):
     # Load DeepSpeech model
     if os.path.isdir(ARGS.model):
@@ -182,47 +194,44 @@ def main(ARGS):
     # Stream from microphone to DeepSpeech using VAD
     stream_context = model.createStream()
     wav_data = bytearray()
-    count = 0
     for frame in frames:
         if frame is not None:
             logging.debug("streaming frame")
             stream_context.feedAudioContent(np.frombuffer(frame, np.int16))
             if ARGS.savewav: wav_data.extend(frame)
             partial_transcription = stream_context.intermediateDecode()
-            if len(partial_transcription) > count:
-                count = len(partial_transcription)
-                print(partial_transcription.split()[-1])
-        else:
-            logging.debug("end utterence")
-            if ARGS.savewav:
-                vad_audio.write_wav(os.path.join(ARGS.savewav, datetime.now().strftime("savewav_%Y-%m-%d_%H-%M-%S_%f.wav")), wav_data)
-                wav_data = bytearray()
-            text = stream_context.finishStream()
-            print("Recognized: %s" % text)
+            if len(partial_transcription) > 0:
+                text = stream_context.finishStream()
+                # pdb.set_trace()
+                # print(f"Recognized:{text}")
+                send_flag = True
+                if text not in ["stop","short","long","get up","spin"]:
+                    if "sh" in text or text == "sure" or "so" in text:
+                        text = "short"
+                    elif "l" in text or "on" in text or "no" in text:
+                        text = "long"
+                    elif "to" in text or text == "but":
+                        text = "stop"
+                    elif "get" in text or "up" in text:
+                        text = "get up"
+                    elif "sp" in text or "in" in text or "be" in text:
+                        text = "spin"
+                    else:
+                        send_flag = False 
+                if send_flag:
+                    assert text in ["stop","short","long","get up","spin"]
+                    print(f"Recognized:{text}")
+                    send_command_to_ros(text)
 
-            ######## find the key word, then trigger the system ########
-            # if text.find("he") != -1:
-            #     name = "human_follower4"
-            #     # try:
-                    
-            #     # except:
-            #     #     print("Error Encountered while running script")
-            #     # iterating through each instance of the process
-            #     for line in os.popen("ps ax | grep " + name + " | grep -v grep"):
-            #         fields = line.split()
-                    
-            #         # extracting Process ID from the output
-            #         pid = fields[0]
-                    
-            #         # terminating process
-            #         os.kill(int(pid), sgnl.SIGKILL)
-            #     print("Process Successfully terminated")
-            #     # os.system("ssh -Y hello-robot@stretch1075.wifi.local.cmu.edu 'echo hello2020 | sudo -S ./duck/launch.sh'")
-            #     # os.system("ssh -Y hello-robot@stretch1075.wifi.local.cmu.edu echo hello2020 | sudo -S './duck/web.sh'")
-            #     exit()
-                    
-            ######## find the key word, then trigger the system ########
-            stream_context = model.createStream()
+                stream_context = model.createStream()
+        # else:
+        #     logging.debug("end utterence")
+        #     if ARGS.savewav:
+        #         vad_audio.write_wav(os.path.join(ARGS.savewav, datetime.now().strftime("savewav_%Y-%m-%d_%H-%M-%S_%f.wav")), wav_data)
+        #         wav_data = bytearray()
+        #     text = stream_context.finishStream()
+        #     print("Recognized: %s" % text)
+        #     stream_context = model.createStream()
 
 if __name__ == '__main__':
     DEFAULT_SAMPLE_RATE = 16000
@@ -252,40 +261,5 @@ if __name__ == '__main__':
     ARGS = parser.parse_args()
     # ARGS = parser.parse_args(['-d',6])
     if ARGS.savewav: os.makedirs(ARGS.savewav, exist_ok=True)
-
-
-    # name = "hiya"
-    # try:
-    #     # iterating through each instance of the process
-    #     for line in os.popen("ps ax | grep " + name + " | grep -v grep"):
-    #         fields = line.split()
-            
-    #         # extracting Process ID from the output
-    #         pid = fields[0]
-            
-    #         print(f"pid is {pid}")
-    #         # terminating process
-    #         os.kill(int(pid), sgnl.SIGKILL)
-    #     print("Process Successfully terminated")
-        
-    # except:
-    #     print("Error Encountered while running script")
-    # exit()
-
-
-    # test get audio devices
-    # import ipdb; ipdb.set_trace()
-    # p = pyaudio.PyAudio()
-    # info = p.get_host_api_info_by_index(0)
-    # numdevices = info.get('deviceCount')
-
-    # for i in range(0, numdevices):
-    #     if (p.get_device_info_by_host_api_device_index(0, i).get('maxInputChannels')) > 0:
-    #         print("Input Device id ", i, " - ", p.get_device_info_by_host_api_device_index(0, i).get('name'))
-
-    # import ipdb; ipdb.set_trace()
-
-    
-
 
     main(ARGS)

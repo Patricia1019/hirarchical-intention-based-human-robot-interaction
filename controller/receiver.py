@@ -141,7 +141,7 @@ class Receiver:
             sqrt_sum = (w**2+x**2+y**2+z**2)**0.5
             w,x,y,z = w/sqrt_sum,x/sqrt_sum,y/sqrt_sum,z/sqrt_sum
             quat_gap = 1 - (w*current_pose[3]+x*current_pose[4]+y*current_pose[5]+z*current_pose[6])**2
-            print(quat_gap)
+            # print(quat_gap)
             if quat_gap < 0.05:
                 # print(f"quat_gap:{quat_gap}")
                 return True
