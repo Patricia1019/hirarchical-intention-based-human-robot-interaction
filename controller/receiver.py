@@ -45,6 +45,7 @@ class Receiver:
         self.command_list = []
         self.command = None
         self.GRIP_TIME = 1.5
+        self.plangraph = PlanGraph()
 
     def receive_pose(self,data):
         pos_x = data.pose.position.x
@@ -199,6 +200,7 @@ class Receiver:
     def decide_send_action(self,data):
         # TODO
         if data == "get_connectors":
+            self.plangraph.short_count += 1
             return ["get_short_tubes",0]
         return None,None
         # return ["",int]
