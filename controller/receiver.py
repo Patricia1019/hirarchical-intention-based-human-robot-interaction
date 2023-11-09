@@ -32,6 +32,10 @@ class PlanGraph:
     def __init__(self):
         self.SHORT_TUBES = 8
         self.LONG_TUBES = 4
+        self.short_count = 0
+        self.long_count = 0
+        self.screw_count = 0
+    
 
 
 class Receiver:
@@ -133,17 +137,18 @@ class Receiver:
             retract = RETRACT_POSITION
             ready = (0.2,0.32,0.19,0,-0.7,-0.7,0)
             # ready_way = (0.2,0.32+0.18,0.19,0,-0.7,-0.7,0)
-            x_interval = 0.08
-            y_interval = 0.15
+            x_interval = 0.10
+            y_interval = 0.16
             row = action[1]%2
             col = action[1]//2
-            get = (-0.26-x_interval*col,0.28-y_interval*row,0.1,0,-0.8,-0.7,0)
-            grip = (-0.26-x_interval*col,0.28-y_interval*row,-0.05,0,-0.8,-0.7,0)
+            base = (-0.24,0.28,0.2,0,-0.8,-0.7,0)
+            get = (-0.24-x_interval*col,0.28-y_interval*row,0.2,0,-0.8,-0.7,0)
+            grip = (-0.24-x_interval*col,0.28-y_interval*row,-0.05,0,-0.8,-0.7,0)
             # grip_way = (-0.26-x_interval*col,0.28-y_interval*row,-0.1,0,-0.8,-0.7,0)
             deliver = (0.3,0.3,0.19,0,-0.7,-0.3,-0.1) # TODO: move with hand
             # [retract,ready,get,grip,(close gripper),get,ready,deliver,(open gripper),retract]
             # waypoints_list = [retract,ready_way,get,grip_way,get,ready_way,deliver,retract]
-            target_list = [retract,ready,get,grip,get,ready,deliver,retract]
+            target_list = [retract,ready,base,get,grip,get,base,ready,deliver,retract]
             waypoints_list = []
             for i in range(len(target_list)):
                 if i == 0:
@@ -153,6 +158,7 @@ class Receiver:
                     for j in range(len(target_list[i])):
                         tmp.append(target_list[i][j]+0.7*(target_list[i][j]-target_list[i-1][j]))
                     waypoints_list.append(tmp)
+            unique_actions = {4:"grip",7:"wait"}
         # TODO: other actions
         return waypoints_list,target_list
 
