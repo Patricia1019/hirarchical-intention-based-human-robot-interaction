@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 import os,sys
 import rospy
-from std_msgs.msg import String
+from std_msgs.msg import String,Float64MultiArray
 from geometry_msgs.msg import Pose,PoseStamped
 import time
 from pathlib import Path
@@ -16,6 +16,7 @@ COMMAND_LIST = ["stop","short","long","spin","lift"]
 
 RETRACT_POSITION = (0.2,0,0.19,0,-0.7,-0.7,0)
 kinova_control_pub = rospy.Publisher("/kinova_demo/pose_cmd", PoseStamped, queue_size=1)
+kinova_grip_pub = rospy.Publisher("/siemens_demo/gripper_cmd", Float64MultiArray, queue_size=1)
 def ComposePoseFromTransQuat(data_frame):
     # assert (len(data_frame.shape) == 1 and data_frame.shape[0] == 7)
     pose = Pose()
@@ -43,6 +44,7 @@ class Receiver:
         self.intention_list = []
         self.command_list = []
         self.command = None
+        self.GRIP_TIME = 1.5
 
     def receive_pose(self,data):
         pos_x = data.pose.position.x
@@ -68,7 +70,7 @@ class Receiver:
             self.execute_action(action)
         
     def execute_action(self,action):
-        waypoints_list,target_list = self.generate_waypoints(action)
+        waypoints_list,target_list,unique_actions = self.generate_waypoints(action)
         kinova_control_msg = PoseStamped()
         kinova_control_msg.pose = ComposePoseFromTransQuat(waypoints_list[0])
         kinova_control_pub.publish(kinova_control_msg)
@@ -87,6 +89,11 @@ class Receiver:
                 break
             if self.reached(current_pose,target_list[i]):
                 i += 1
+                if i in unique_actions.keys():
+                    kinova_control_msg.pose = ComposePoseFromTransQuat(target_list[i-1])
+                    kinova_control_pub.publish(kinova_control_msg)
+                    time.sleep(0.5)
+                    self.execute_unique_actions(unique_actions[i])
                 if i < len(waypoints_list):
                     kinova_control_msg.pose = ComposePoseFromTransQuat(waypoints_list[i])
                     kinova_control_pub.publish(kinova_control_msg)
@@ -95,6 +102,24 @@ class Receiver:
                     kinova_control_pub.publish(kinova_control_msg)
         return
     
+    def execute_unique_actions(self,unique_actions):
+        for i in range(len(unique_actions)):
+            if unique_actions[i] == "grip":
+                kinova_grip_msg = Float64MultiArray()
+                kinova_grip_msg.data = [0] # 0 for close, 1 for open
+                kinova_grip_pub.publish(kinova_grip_msg)
+                time.sleep(self.GRIP_TIME)
+            elif "wait" in unique_actions[i]:
+                wait_time = int(unique_actions[i][4:])
+                time.sleep(wait_time)
+            elif unique_actions[i] == "open":
+                kinova_grip_msg = Float64MultiArray()
+                kinova_grip_msg.data = [1] # 0 for close, 1 for open
+                kinova_grip_pub.publish(kinova_grip_msg) 
+                time.sleep(self.GRIP_TIME)
+            else:
+                print(f"Invalid unique actions[{i}]!")
+
     def retract(self,current_pose,ori_targets,index):
         kinova_control_msg = PoseStamped()
         kinova_control_msg.pose = ComposePoseFromTransQuat(current_pose)
@@ -135,20 +160,20 @@ class Receiver:
         waypoints_list = []
         if action[0] == "get_short_tubes":
             retract = RETRACT_POSITION
-            ready = (0.2,0.32,0.19,0,-0.7,-0.7,0)
+            ready = (0.2,0.32,0.25,0,-0.7,-0.7,0)
             # ready_way = (0.2,0.32+0.18,0.19,0,-0.7,-0.7,0)
             x_interval = 0.10
             y_interval = 0.16
             row = action[1]%2
             col = action[1]//2
-            base = (-0.24,0.28,0.2,0,-0.8,-0.7,0)
-            get = (-0.24-x_interval*col,0.28-y_interval*row,0.2,0,-0.8,-0.7,0)
-            grip = (-0.24-x_interval*col,0.28-y_interval*row,-0.05,0,-0.8,-0.7,0)
+            base = (-0.24,0.28,0.2,0,-0.7,-0.7,0)
+            get = (-0.24-x_interval*col,0.28-y_interval*row,0.2,0,-0.7,-0.7,0)
+            grip = (-0.24-x_interval*col,0.28-y_interval*row,-0.05,0,-0.7,-0.7,0)
             # grip_way = (-0.26-x_interval*col,0.28-y_interval*row,-0.1,0,-0.8,-0.7,0)
-            deliver = (0.3,0.3,0.19,0,-0.7,-0.3,-0.1) # TODO: move with hand
+            deliver = (0.3,0.3,0.25,0,-0.7,-0.6,-0.2) # TODO: move with hand
             # [retract,ready,get,grip,(close gripper),get,ready,deliver,(open gripper),retract]
             # waypoints_list = [retract,ready_way,get,grip_way,get,ready_way,deliver,retract]
-            target_list = [retract,ready,base,get,grip,get,base,ready,deliver,retract]
+            target_list = [retract,ready,base,get,grip,get,base,ready,deliver,ready,retract]
             waypoints_list = []
             for i in range(len(target_list)):
                 if i == 0:
@@ -156,11 +181,14 @@ class Receiver:
                 if i > 0:
                     tmp = []
                     for j in range(len(target_list[i])):
-                        tmp.append(target_list[i][j]+0.7*(target_list[i][j]-target_list[i-1][j]))
+                        if j < 3: # only adjust position points
+                            tmp.append(target_list[i][j]+0.7*(target_list[i][j]-target_list[i-1][j]))
+                        else: # keep augular points stay as target points
+                            tmp.append(target_list[i][j])
                     waypoints_list.append(tmp)
-            unique_actions = {4:"grip",7:"wait"}
+            unique_actions = {5:["grip"],9:["wait3","open"]}
         # TODO: other actions
-        return waypoints_list,target_list
+        return waypoints_list,target_list,unique_actions
 
     def get_command(self):
         # TODO: NOT USED
