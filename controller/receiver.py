@@ -34,6 +34,8 @@ class PlanGraph:
         self.TUBE_SUM = {"short":8,"long":4}
         self.tube_count = {"short":0,"long":0}
         self.screw_count = 0
+        self.action_history = []
+        self.stage = {"bottom":[],"four_tubes":[],"top":[]}
 
 
 class Receiver:
@@ -44,6 +46,7 @@ class Receiver:
         self.GRIP_TIME = 1.5
         self.plangraph = PlanGraph()
         self.REVERT_LIST = {"grip":"open","open":"grip"}
+        self.executing = False
 
     def receive_pose(self,data):
         pos_x = data.pose.position.x
@@ -59,14 +62,22 @@ class Receiver:
     def receive_data(self,data):
         if data.data in INTENTION_LIST:
             self.intention_list.append(data.data)
+            action = self.decide_send_action(data.data)
+            if action[0] and not self.executing:
+                print(action)
+                self.execute_action(action)
         if data.data in COMMAND_LIST:
             # self.command_list.append(data.data)
             self.command = data.data
             # print(data.data)
-        action = self.decide_send_action(data.data)
-        if action[0]:
-            print(action)
-            self.execute_action(action)
+            action = self.decide_send_action(data.data)
+            if action[0] == "get_short_tubes" and not self.executing:
+                print(action)
+                for _ in range(4):
+                    self.execute_action(action)
+            elif action[0] and not self.executing:
+                print(action)
+                self.execute_action(action)
         
     def execute_action(self,action,index=0):
         waypoints_list,target_list,unique_actions = self.generate_waypoints(action)
@@ -75,6 +86,7 @@ class Receiver:
         kinova_control_pub.publish(kinova_control_msg)
         i = index
         if len(waypoints_list) == 0: return
+        self.executing = True
         while i < len(waypoints_list):
             current_pose = self.current_pose
             command = self.command
@@ -88,12 +100,13 @@ class Receiver:
                 break
             if command in ["long","short"] and command not in action:
                 print(command)
-                self.return_base(current_pose,target_list,unique_actions,i)
                 action = self.decide_send_action(command)
-                BASE_INDEX = 6
-                self.execute_action(action,BASE_INDEX+1)
-                self.command = None
-                break
+                if action:
+                    self.return_base(current_pose,target_list,unique_actions,i)
+                    BASE_INDEX = 6
+                    self.execute_action(action,BASE_INDEX+1)
+                    self.command = None
+                    break
 
             if self.reached(current_pose,target_list[i]):
                 i += 1
@@ -112,6 +125,8 @@ class Receiver:
                         self.plangraph.tube_count["short"] += 1
                     elif "long" in action[0]:
                         self.plangraph.tube_count["long"] += 1
+                    self.plangraph.action_history.append(action[0])
+        self.executing = False
         return
     
     def execute_unique_actions(self,unique_actions):
@@ -236,14 +251,20 @@ class Receiver:
 
     def decide_send_action(self,data):
         # TODO
-        for key in self.plangraph.tube_count.keys(): # tube sum check
-            assert self.plangraph.tube_count[key] < self.plangraph.TUBE_SUM[key]
+        # for key in self.plangraph.tube_count.keys(): # tube sum check
+        #     assert self.plangraph.tube_count[key] < self.plangraph.TUBE_SUM[key]
         if data == "get_connectors": # decide to get short tubes or get long tubes
-            return ["get_short_tubes",self.plangraph.tube_count["short"]]
+            if len(self.plangraph.stage["bottom"]) < 4:
+                return ["get_short_tubes",self.plangraph.tube_count["short"]]
+            elif len(self.plangraph.stage["top"]) < 4:
+                return ["get_short_tubes",self.plangraph.tube_count["short"]]
+    
         if data == "short":
-            return ["get_short_tubes",self.plangraph.tube_count["short"]]
+            if self.plangraph.tube_count["short"] < self.plangraph.TUBE_SUM["short"]:
+                return ["get_short_tubes",self.plangraph.tube_count["short"]]
         if data == "long":
-            return ["get_long_tubes",self.plangraph.tube_count["long"]]
+            if self.plangraph.tube_count["long"] < self.plangraph.TUBE_SUM["long"]:
+                return ["get_long_tubes",self.plangraph.tube_count["long"]]
         return None,None
         # return ["",int]
 
