@@ -156,8 +156,12 @@ class Receiver:
         # revert unique actions
         unique_actions = {}
         for unique_index in ori_unique_actions.keys():
-            if unique_index < index and "wait" not in ori_unique_actions[unique_index]:
-                unique_actions[index-1-unique_index] = self.REVERT_LIST[ori_unique_actions[unique_index]]
+            if unique_index <= index:
+                unique_actions[index-unique_index] = []
+                for unique_action in ori_unique_actions[unique_index]:
+                    if "wait" not in unique_action:
+                        # pdb.set_trace()
+                        unique_actions[index-unique_index].append(self.REVERT_LIST[unique_action])
 
         # pdb.set_trace()
         i = 0
@@ -165,6 +169,11 @@ class Receiver:
         kinova_control_msg.pose = ComposePoseFromTransQuat(waypoints_list[0])
         kinova_control_pub.publish(kinova_control_msg)
         # pdb.set_trace()
+        if i in unique_actions.keys():
+            kinova_control_msg.pose = ComposePoseFromTransQuat(target_list[0])
+            kinova_control_pub.publish(kinova_control_msg)
+            time.sleep(0.5)
+            self.execute_unique_actions(unique_actions[i])
         while i < len(waypoints_list):
             current_pose = self.current_pose
             if self.reached(current_pose,target_list[i]):
