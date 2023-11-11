@@ -31,12 +31,9 @@ def ComposePoseFromTransQuat(data_frame):
 
 class PlanGraph:
     def __init__(self):
-        self.SHORT_TUBES = 8
-        self.LONG_TUBES = 4
-        self.short_count = 0
-        self.long_count = 0
+        self.TUBE_SUM = {"short":8,"long":4}
+        self.tube_count = {"short":0,"long":0}
         self.screw_count = 0
-    
 
 
 class Receiver:
@@ -46,6 +43,7 @@ class Receiver:
         self.command = None
         self.GRIP_TIME = 1.5
         self.plangraph = PlanGraph()
+        self.REVERT_LIST = {"grip":"open","open":"grip"}
 
     def receive_pose(self,data):
         pos_x = data.pose.position.x
@@ -70,12 +68,12 @@ class Receiver:
             print(action)
             self.execute_action(action)
         
-    def execute_action(self,action):
+    def execute_action(self,action,index=0):
         waypoints_list,target_list,unique_actions = self.generate_waypoints(action)
         kinova_control_msg = PoseStamped()
-        kinova_control_msg.pose = ComposePoseFromTransQuat(waypoints_list[0])
+        kinova_control_msg.pose = ComposePoseFromTransQuat(waypoints_list[index])
         kinova_control_pub.publish(kinova_control_msg)
-        i = 0
+        i = index
         if len(waypoints_list) == 0: return
         while i < len(waypoints_list):
             current_pose = self.current_pose
@@ -83,11 +81,20 @@ class Receiver:
             # pdb.set_trace()
             if command == "stop":
                 print(command)
-                self.retract(current_pose,target_list,i)
+                self.retract(current_pose,target_list,unique_actions,i)
                 self.command = None
                 # kinova_control_msg.pose = ComposePoseFromTransQuat(current_pose)
                 # kinova_control_pub.publish(kinova_control_msg)
                 break
+            if command in ["long","short"] and command not in action:
+                print(command)
+                self.return_base(current_pose,target_list,unique_actions,i)
+                action = self.decide_send_action(command)
+                BASE_INDEX = 6
+                self.execute_action(action,BASE_INDEX+1)
+                self.command = None
+                break
+
             if self.reached(current_pose,target_list[i]):
                 i += 1
                 if i in unique_actions.keys():
@@ -98,13 +105,18 @@ class Receiver:
                 if i < len(waypoints_list):
                     kinova_control_msg.pose = ComposePoseFromTransQuat(waypoints_list[i])
                     kinova_control_pub.publish(kinova_control_msg)
-                else:
+                else: # end
                     kinova_control_msg.pose = ComposePoseFromTransQuat(target_list[i-1])
                     kinova_control_pub.publish(kinova_control_msg)
+                    if "short" in action[0]:
+                        self.plangraph.tube_count["short"] += 1
+                    elif "long" in action[0]:
+                        self.plangraph.tube_count["long"] += 1
         return
     
     def execute_unique_actions(self,unique_actions):
         for i in range(len(unique_actions)):
+            print(unique_actions[i])
             if unique_actions[i] == "grip":
                 kinova_grip_msg = Float64MultiArray()
                 kinova_grip_msg.data = [0] # 0 for close, 1 for open
@@ -121,10 +133,12 @@ class Receiver:
             else:
                 print(f"Invalid unique actions[{i}]!")
 
-    def retract(self,current_pose,ori_targets,index):
+    def retract(self,current_pose,ori_targets,ori_unique_actions,index):
+        print("retract")
         kinova_control_msg = PoseStamped()
         kinova_control_msg.pose = ComposePoseFromTransQuat(current_pose)
         kinova_control_pub.publish(kinova_control_msg)
+        # revert actions
         target_list = ori_targets[:index][::-1]
         waypoints_list = []
         for i in range(len(target_list)):
@@ -138,6 +152,13 @@ class Receiver:
                 for j in range(len(target_list[i])):
                     tmp.append(target_list[i][j]+0.7*(target_list[i][j]-target_list[i-1][j]))
                 waypoints_list.append(tmp)
+        
+        # revert unique actions
+        unique_actions = {}
+        for unique_index in ori_unique_actions.keys():
+            if unique_index < index and "wait" not in ori_unique_actions[unique_index]:
+                unique_actions[index-1-unique_index] = self.REVERT_LIST[ori_unique_actions[unique_index]]
+
         # pdb.set_trace()
         i = 0
         kinova_control_msg = PoseStamped()
@@ -147,8 +168,12 @@ class Receiver:
         while i < len(waypoints_list):
             current_pose = self.current_pose
             if self.reached(current_pose,target_list[i]):
-                print("reached")
                 i += 1
+                if i in unique_actions.keys():
+                    kinova_control_msg.pose = ComposePoseFromTransQuat(target_list[i-1])
+                    kinova_control_pub.publish(kinova_control_msg)
+                    time.sleep(0.5)
+                    self.execute_unique_actions(unique_actions[i])
                 if i < len(waypoints_list):
                     kinova_control_msg.pose = ComposePoseFromTransQuat(waypoints_list[i])
                     kinova_control_pub.publish(kinova_control_msg)
@@ -156,7 +181,10 @@ class Receiver:
                     kinova_control_msg.pose = ComposePoseFromTransQuat(target_list[i-1])
                     kinova_control_pub.publish(kinova_control_msg)
         return
-   
+    
+    def return_base(self):
+        pass # TODO
+
     def generate_waypoints(self,action):
         waypoints_list = []
         if action[0] == "get_short_tubes":
@@ -199,9 +227,14 @@ class Receiver:
 
     def decide_send_action(self,data):
         # TODO
-        if data == "get_connectors":
-            self.plangraph.short_count += 1
-            return ["get_short_tubes",0]
+        for key in self.plangraph.tube_count.keys(): # tube sum check
+            assert self.plangraph.tube_count[key] < self.plangraph.TUBE_SUM[key]
+        if data == "get_connectors": # decide to get short tubes or get long tubes
+            return ["get_short_tubes",self.plangraph.tube_count["short"]]
+        if data == "short":
+            return ["get_short_tubes",self.plangraph.tube_count["short"]]
+        if data == "long":
+            return ["get_long_tubes",self.plangraph.tube_count["long"]]
         return None,None
         # return ["",int]
 
