@@ -66,7 +66,7 @@ if __name__ == '__main__':
     labels_list = []
     predictor = IntentionPredictor()
     for batch in tqdm(dataloader):
-        inputs,target_traj,labels = batch
+        inputs,target_traj,labels = batch # inputs.shape:[batch_size,seq_len,15*3]
         # pred_traj,pred_intention = model(inputs)
         pred_traj,pred_intention = predictor.predict(inputs,args.restrict)
         gap = 1 if sum(abs(pred_intention-labels))>0 else 0
