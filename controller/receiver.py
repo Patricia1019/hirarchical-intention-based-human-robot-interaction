@@ -15,6 +15,7 @@ COMMAND_LIST = ["stop","short","long","spin","lift"]
 
 
 RETRACT_POSITION = (0.2,0,0.19,0,-0.7,-0.7,0)
+BASE = (-0.18,0.28,0.25,0,-0.7,-0.7,0)
 kinova_control_pub = rospy.Publisher("/kinova_demo/pose_cmd", PoseStamped, queue_size=1)
 kinova_grip_pub = rospy.Publisher("/siemens_demo/gripper_cmd", Float64MultiArray, queue_size=1)
 def ComposePoseFromTransQuat(data_frame):
@@ -222,9 +223,9 @@ class Receiver:
             y_interval = 0.16
             row = action[1]%2
             col = action[1]//2
-            base = (-0.24,0.28,0.2,0,-0.7,-0.7,0)
-            get = (-0.24-x_interval*col,0.28-y_interval*row,0.2,0,-0.7,-0.7,0)
-            grip = (-0.24-x_interval*col,0.28-y_interval*row,-0.05,0,-0.7,-0.7,0)
+            base = BASE
+            get = (-0.27-x_interval*col,0.28-y_interval*row,0.2,0,-0.7,-0.7,0)
+            grip = (-0.27-x_interval*col,0.28-y_interval*row,-0.05,0,-0.7,-0.7,0)
             # grip_way = (-0.26-x_interval*col,0.28-y_interval*row,-0.1,0,-0.8,-0.7,0)
             deliver = (0.3,0.3,0.25,0,-0.7,-0.6,-0.2) # TODO: move with hand
             # [retract,ready,get,grip,(close gripper),get,ready,deliver,(open gripper),retract]
@@ -243,7 +244,34 @@ class Receiver:
                             tmp.append(target_list[i][j])
                     waypoints_list.append(tmp)
             unique_actions = {5:["grip"],9:["wait3","open"]}
-        # TODO: other actions
+        if action[0] == "get_long_tubes":
+            retract = RETRACT_POSITION
+            ready = (0.2,0.32,0.35,0,-0.7,-0.7,0)
+            # ready_way = (0.2,0.32+0.18,0.19,0,-0.7,-0.7,0)
+            x_interval = 0.10
+            col = action[1]
+            base = BASE
+            get = (-0.27-x_interval*col,-0.04,0.3,0,-0.7,-0.7,0)
+            grip = (-0.27-x_interval*col,-0.04,0.18,0,-0.7,-0.7,0)
+            base_long = (-0.18,-0.04,0.3,0,-0.7,-0.7,0)
+            # grip_way = (-0.26-x_interval*col,0.28-y_interval*row,-0.1,0,-0.8,-0.7,0)
+            deliver = (0.3,0.3,0.35,0,-0.7,-0.6,-0.2) # TODO: move with hand
+            # [retract,ready,get,grip,(close gripper),get,ready,deliver,(open gripper),retract]
+            # waypoints_list = [retract,ready_way,get,grip_way,get,ready_way,deliver,retract]
+            target_list = [retract,ready,base,get,grip,get,base_long,base,ready,deliver,ready,retract]
+            waypoints_list = []
+            for i in range(len(target_list)):
+                if i == 0:
+                    waypoints_list.append(target_list[i])
+                if i > 0:
+                    tmp = []
+                    for j in range(len(target_list[i])):
+                        if j < 3: # only adjust position points
+                            tmp.append(target_list[i][j]+0.7*(target_list[i][j]-target_list[i-1][j]))
+                        else: # keep augular points stay as target points
+                            tmp.append(target_list[i][j])
+                    waypoints_list.append(tmp)
+            unique_actions = {5:["grip"],10:["wait3","open"]}
         return waypoints_list,target_list,unique_actions
 
     def get_command(self):
