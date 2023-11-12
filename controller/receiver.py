@@ -72,12 +72,14 @@ class Receiver:
             # self.command_list.append(data.data)
             self.command = data.data
             # print(data.data)
-            if action[0] == "get_short_tubes" and not self.executing:
+            if self.command == "short" and not self.executing:
+                self.plangraph.stage = "four_tubes"
                 for _ in range(4):
                     action = self.decide_send_action(data.data)
                     print(action)
+                    self.command = None
                     self.execute_action(action)
-            elif action[0] and not self.executing:
+            elif self.command and not self.executing:
                 action = self.decide_send_action(data.data)
                 print(action)
                 self.execute_action(action)
@@ -105,8 +107,8 @@ class Receiver:
                 print(command)
                 action = self.decide_send_action(command)
                 if action:
-                    self.return_base(current_pose,target_list,unique_actions,i)
-                    BASE_INDEX = 6
+                    BASE_INDEX = 2
+                    self.return_base(current_pose,target_list,unique_actions,i,BASE_INDEX)
                     self.execute_action(action,BASE_INDEX+1)
                     self.command = None
                     break
@@ -122,6 +124,7 @@ class Receiver:
                     kinova_control_msg.pose = ComposePoseFromTransQuat(waypoints_list[i])
                     kinova_control_pub.publish(kinova_control_msg)
                 else: # end
+                    print("end")
                     kinova_control_msg.pose = ComposePoseFromTransQuat(target_list[i-1])
                     kinova_control_pub.publish(kinova_control_msg)
                     if "short" in action[0]:
@@ -129,7 +132,7 @@ class Receiver:
                     elif "long" in action[0]:
                         self.plangraph.tube_count["long"] += 1
                     self.plangraph.action_history.append(action[0])
-                    self.plangraph.stage_record[self.stage].append(action[0])
+                    self.plangraph.stage_record[self.plangraph.stage].append(action[0])
         self.executing = False
         return
     
@@ -210,8 +213,66 @@ class Receiver:
                     kinova_control_pub.publish(kinova_control_msg)
         return
     
-    def return_base(self):
-        pass # TODO
+    def return_base(self,current_pose,ori_targets,ori_unique_actions,index,base_index):
+        print("return base")
+        kinova_control_msg = PoseStamped()
+        kinova_control_msg.pose = ComposePoseFromTransQuat(current_pose)
+        kinova_control_pub.publish(kinova_control_msg)
+        # revert actions
+        if index <= base_index: # make sure that the robot indeed get to base position
+            target_list = ori_targets[index:base_index+1]
+        else:
+            target_list = ori_targets[base_index:index][::-1]
+        waypoints_list = []
+        for i in range(len(target_list)):
+            if i == 0:
+                tmp = []
+                for j in range(len(target_list[i])):
+                    tmp.append(target_list[i][j]+0.7*(target_list[i][j]-current_pose[j]))
+                waypoints_list.append(tmp)
+            if i > 0:
+                tmp = []
+                for j in range(len(target_list[i])):
+                    tmp.append(target_list[i][j]+0.7*(target_list[i][j]-target_list[i-1][j]))
+                waypoints_list.append(tmp)
+        
+        # revert unique actions
+        unique_actions = {}
+        for unique_index in ori_unique_actions.keys():
+            if unique_index <= index:
+                unique_actions[index-unique_index] = []
+                for unique_action in ori_unique_actions[unique_index]:
+                    if "wait" not in unique_action:
+                        # pdb.set_trace()
+                        unique_actions[index-unique_index].append(self.REVERT_LIST[unique_action])
+
+        # pdb.set_trace()
+        i = 0
+        kinova_control_msg = PoseStamped()
+        kinova_control_msg.pose = ComposePoseFromTransQuat(waypoints_list[0])
+        kinova_control_pub.publish(kinova_control_msg)
+        # pdb.set_trace()
+        if i in unique_actions.keys():
+            kinova_control_msg.pose = ComposePoseFromTransQuat(target_list[0])
+            kinova_control_pub.publish(kinova_control_msg)
+            time.sleep(0.5)
+            self.execute_unique_actions(unique_actions[i])
+        while i < len(waypoints_list):
+            current_pose = self.current_pose
+            if self.reached(current_pose,target_list[i]):
+                i += 1
+                if i in unique_actions.keys():
+                    kinova_control_msg.pose = ComposePoseFromTransQuat(target_list[i-1])
+                    kinova_control_pub.publish(kinova_control_msg)
+                    time.sleep(0.5)
+                    self.execute_unique_actions(unique_actions[i])
+                if i < len(waypoints_list):
+                    kinova_control_msg.pose = ComposePoseFromTransQuat(waypoints_list[i])
+                    kinova_control_pub.publish(kinova_control_msg)
+                else:
+                    kinova_control_msg.pose = ComposePoseFromTransQuat(target_list[i-1])
+                    kinova_control_pub.publish(kinova_control_msg)
+        return
 
     def generate_waypoints(self,action):
         waypoints_list = []
@@ -224,8 +285,8 @@ class Receiver:
             row = action[1]%2
             col = action[1]//2
             base = BASE
-            get = (-0.27-x_interval*col,0.28-y_interval*row,0.2,0,-0.7,-0.7,0)
-            grip = (-0.27-x_interval*col,0.28-y_interval*row,-0.05,0,-0.7,-0.7,0)
+            get = (-0.26-x_interval*col,0.28-y_interval*row,0.2,0,-0.7,-0.7,0)
+            grip = (-0.26-x_interval*col,0.28-y_interval*row,-0.05,0,-0.7,-0.7,0)
             # grip_way = (-0.26-x_interval*col,0.28-y_interval*row,-0.1,0,-0.8,-0.7,0)
             deliver = (0.3,0.3,0.25,0,-0.7,-0.6,-0.2) # TODO: move with hand
             # [retract,ready,get,grip,(close gripper),get,ready,deliver,(open gripper),retract]
@@ -251,8 +312,8 @@ class Receiver:
             x_interval = 0.10
             col = action[1]
             base = BASE
-            get = (-0.27-x_interval*col,-0.04,0.3,0,-0.7,-0.7,0)
-            grip = (-0.27-x_interval*col,-0.04,0.18,0,-0.7,-0.7,0)
+            get = (-0.26-x_interval*col,-0.03,0.3,0,-0.7,-0.7,0)
+            grip = (-0.26-x_interval*col,-0.03,0.16,0,-0.7,-0.7,0)
             base_long = (-0.18,-0.04,0.3,0,-0.7,-0.7,0)
             # grip_way = (-0.26-x_interval*col,0.28-y_interval*row,-0.1,0,-0.8,-0.7,0)
             deliver = (0.3,0.3,0.35,0,-0.7,-0.6,-0.2) # TODO: move with hand
@@ -288,7 +349,7 @@ class Receiver:
         if data == "get_connectors": # decide to get short tubes or get long tubes
             for stage in ["bottom","top"]:
                 if len(self.plangraph.stage_record[stage]) < 4:
-                    self.stage = stage
+                    self.plangraph.stage = stage
                     for key in REVERT_TUBE.keys():
                         if self.plangraph.stage_record[stage].count(key) == 2:
                             return [f"get_{REVERT_TUBE[key]}_tubes",self.plangraph.tube_count[REVERT_TUBE[key]]]
