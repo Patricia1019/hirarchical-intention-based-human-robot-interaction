@@ -17,10 +17,9 @@ def send_command_to_ros(command="stop"):
     rospy.loginfo(command)
     rate = rospy.Rate(10) # 10hz
     pub.publish(command)
-    if command == "stop":
-        rate.sleep()
-        rospy.loginfo(command)
-        pub.publish(command)
+    rate.sleep()
+    rospy.loginfo(command)
+    pub.publish(command)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -31,6 +30,8 @@ if __name__ == '__main__':
     args = parser.parse_args()
     # while True:
     if args.intention:
+        
         send_intention_to_ros(args.intention)
     if args.command:
         send_command_to_ros(args.command)
+    

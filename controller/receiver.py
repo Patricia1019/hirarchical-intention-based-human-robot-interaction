@@ -18,6 +18,7 @@ RETRACT_POSITION = (0.2,0,0.19,0,-0.7,-0.7,0)
 BASE = (-0.18,0.28,0.25,0,-0.7,-0.7,0)
 kinova_control_pub = rospy.Publisher("/kinova_demo/pose_cmd", PoseStamped, queue_size=1)
 kinova_grip_pub = rospy.Publisher("/siemens_demo/gripper_cmd", Float64MultiArray, queue_size=1)
+pub = rospy.Publisher('chatter', String, queue_size=10)
 def ComposePoseFromTransQuat(data_frame):
     # assert (len(data_frame.shape) == 1 and data_frame.shape[0] == 7)
     pose = Pose()
@@ -73,12 +74,13 @@ class Receiver:
             self.command = data.data
             # print(data.data)
             if self.command == "short" and not self.executing:
-                self.plangraph.stage = "four_tubes"
-                for _ in range(4):
-                    action = self.decide_send_action(data.data)
-                    print(action)
-                    self.command = None
-                    self.execute_action(action)
+                if len(self.plangraph.stage_record["four_tubes"]) < 4:
+                    self.plangraph.stage = "four_tubes"
+                    for _ in range(4):
+                        action = self.decide_send_action(data.data)
+                        print(action)
+                        self.command = None
+                        self.execute_action(action)
             elif self.command and not self.executing:
                 action = self.decide_send_action(data.data)
                 print(action)
@@ -107,10 +109,10 @@ class Receiver:
                 print(command)
                 action = self.decide_send_action(command)
                 if action:
+                    self.command = None
                     BASE_INDEX = 2
                     self.return_base(current_pose,target_list,unique_actions,i,BASE_INDEX)
                     self.execute_action(action,BASE_INDEX+1)
-                    self.command = None
                     break
 
             if self.reached(current_pose,target_list[i]):
