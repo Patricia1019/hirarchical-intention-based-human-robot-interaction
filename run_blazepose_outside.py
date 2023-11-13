@@ -310,29 +310,33 @@ def intention_sender(args):
                         
                         if intention:
                             if len(intention_queue) < send_window:
-                                intention_queue.append(intention)
+                                if len(intention_queue) == 0:
+                                    intention_queue.append(intention)
+                                else:
+                                    if intention == intention_queue[-1]:
+                                        intention_queue.append(intention)
+                                    else:
+                                        intention_queue = []
                             else:
-                                intention_queue.pop(0)
-                                intention_queue.append(intention)
-                                if all(x == intention_queue[0] for x in intention_queue):
-                                    if intention != "no_action" and intention != old_intention:
-                                        if intention == "get_connectors":
-                                            if args.outer_restrict == 'working_area':
-                                                if righthand[0] < -0.35: send_intention_to_ros(intention)
-                                            else:
-                                                send_intention_to_ros(intention)
-                                        elif intention == "get_screws":
-                                            if args.outer_restrict == 'working_area':
-                                                if righthand[0] > 0.1: send_intention_to_ros(intention)
-                                            else:
-                                                send_intention_to_ros(intention)
-                                        elif intention == "get_wheels":
-                                            if args.outer_restrict == 'working_area':
-                                                if righthand[0] > 0.1: send_intention_to_ros(intention)
-                                            else:
-                                                send_intention_to_ros(intention)
+                                if intention != old_intention and intention == intention_queue[-1] and intention != "no_action":
+                                    if intention == "get_connectors":
+                                        if args.outer_restrict == 'working_area':
+                                            if righthand[0] < -0.35: send_intention_to_ros(intention)
+                                        else:
+                                            send_intention_to_ros(intention)
+                                    elif intention == "get_screws":
+                                        if args.outer_restrict == 'working_area':
+                                            if righthand[0] > 0.1: send_intention_to_ros(intention)
+                                        else:
+                                            send_intention_to_ros(intention)
+                                    elif intention == "get_wheels":
+                                        if args.outer_restrict == 'working_area':
+                                            if righthand[0] > 0.1: send_intention_to_ros(intention)
+                                        else:
+                                            send_intention_to_ros(intention)
+                                old_intention = intention
+                                intention_queue = []
 
-                                    old_intention = intention
 
                         cv2.putText(masked_frame, f"intention:{intention}", (2, frame.shape[0] - 52), cv2.FONT_HERSHEY_TRIPLEX, 0.4, (255,255,255))
                         cv2.putText(masked_frame, "right hand x: {:.2f}, y: {:.2f}, z: {:.2f}".format(landmarks[16,0],landmarks[16,1],landmarks[16,2]), (2, frame.shape[0] - 36), cv2.FONT_HERSHEY_TRIPLEX, 0.4, (255,255,255))
