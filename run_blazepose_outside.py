@@ -349,6 +349,7 @@ def intention_sender(args):
                             cv2.imwrite(f'{ROOT_DIR}/images{task[-3:]}/{frame_count}.png',masked_frame)
                         else:
                             video_out.write(masked_frame)
+                    
                     if show:
                         cv2.imshow("preview", masked_frame)
 
