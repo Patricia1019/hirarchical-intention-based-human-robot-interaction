@@ -318,7 +318,7 @@ def intention_sender(args):
                                     if intention != "no_action" and intention != old_intention:
                                         if intention == "get_connectors":
                                             if args.outer_restrict == 'working_area':
-                                                if righthand[0] < -0.4: send_intention_to_ros(intention)
+                                                if righthand[0] < -0.35: send_intention_to_ros(intention)
                                             else:
                                                 send_intention_to_ros(intention)
                                         elif intention == "get_screws":

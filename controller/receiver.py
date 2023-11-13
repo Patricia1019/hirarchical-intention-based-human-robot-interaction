@@ -306,7 +306,7 @@ class Receiver:
                         else: # keep augular points stay as target points
                             tmp.append(target_list[i][j])
                     waypoints_list.append(tmp)
-            unique_actions = {5:["grip"],9:["wait3","open"]}
+            unique_actions = {5:["grip"],9:["wait1","open"]}
         if action[0] == "get_long_tubes":
             retract = RETRACT_POSITION
             ready = (0.2,0.32,0.35,0,-0.7,-0.7,0)
