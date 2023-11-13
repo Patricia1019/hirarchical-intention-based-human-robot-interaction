@@ -3,21 +3,25 @@ from std_msgs.msg import String
 import argparse
 from pathlib import Path
 FILE_DIR = Path(__file__).parent
-
+import time
+import pdb
 
 def send_intention_to_ros(intention):
     pub = rospy.Publisher('chatter', String, queue_size=10)
     rospy.init_node('intention', anonymous=True)
     rospy.loginfo(intention)
     pub.publish(intention)
+    # time.sleep(0.1)
+    # rospy.loginfo(intention)
+    # pub.publish(intention)
 
 def send_command_to_ros(command="stop"):
     pub = rospy.Publisher('chatter', String, queue_size=10)
     rospy.init_node('command', anonymous=True)
     rospy.loginfo(command)
-    rate = rospy.Rate(10) # 10hz
+    # rate = rospy.Rate(10) # 10hz
     pub.publish(command)
-    rate.sleep()
+    time.sleep(0.1)
     rospy.loginfo(command)
     pub.publish(command)
 
@@ -30,7 +34,6 @@ if __name__ == '__main__':
     args = parser.parse_args()
     # while True:
     if args.intention:
-        
         send_intention_to_ros(args.intention)
     if args.command:
         send_command_to_ros(args.command)

@@ -50,7 +50,7 @@ def get_intention(index):
     for key,value in INTENTION_LIST.items():
         if value == index:
             return key
-    return "no action"
+    return "no_action"
 
 def send_intention_to_ros(intention):
     pub = rospy.Publisher('chatter', String, queue_size=10)
@@ -64,6 +64,7 @@ def intention_sender(args):
     task = args.task
     syncNN = args.syncNN
     frame_size = args.seq_len
+    send_window = args.send_window
     video = args.video
     ROOT_DIR = f'{FILE_DIR}/human_traj/{task[:-3]}'
     if not os.path.exists(ROOT_DIR):
@@ -185,8 +186,10 @@ def intention_sender(args):
         video_out = cv2.VideoWriter(f'{ROOT_DIR}/{task}_camera_out.mp4', fourcc, pose_fps, (img_w,img_h))
     frame_count = 0
     traj_queue = []
+    intention_queue = []
     Predictor = IntentionPredictor()
     old_upperbody = 0
+    old_intention = None
     while True:
         frame = qRgb.get().getCvFrame()
         
@@ -262,7 +265,11 @@ def intention_sender(args):
                     # save trajectory
                     if body:
                         frame_count += 1
+                        cv2.putText(masked_frame, "frame: {:.2f}".format(frame_count), (2, frame.shape[0] - 20), cv2.FONT_HERSHEY_TRIPLEX, 0.4, (255,255,255))
                         landmarks = body.landmarks_world
+                        righthand = landmarks[16]
+                        rightelbow = landmarks[14]
+                        rightshoulder = landmarks[12]
                         upperbody = np.concatenate((landmarks[11:25,:],landmarks[0:1,:]),axis=0)
                         if len(traj_queue) < frame_size:
                             traj_queue.append(upperbody)
@@ -283,10 +290,6 @@ def intention_sender(args):
                             intention = get_intention(pred_intention)
                             cv2.putText(masked_frame, f"intention:{intention}", (2, frame.shape[0] - 52), cv2.FONT_HERSHEY_TRIPLEX, 0.4, (255,255,255))
 
-                        cv2.putText(masked_frame, "frame: {:.2f}".format(frame_count), (2, frame.shape[0] - 20), cv2.FONT_HERSHEY_TRIPLEX, 0.4, (255,255,255))
-                        righthand = landmarks[16]
-                        rightelbow = landmarks[14]
-                        rightshoulder = landmarks[12]
 
                         # intention prediction based on naive coordinates changes
                         # if righthand[0] < -0.5:
@@ -305,9 +308,31 @@ def intention_sender(args):
                         #     intention = ""
                         # old_upperbody = upperbody
                         
-
                         if intention:
-                            send_intention_to_ros(intention)
+                            if len(intention_queue) < send_window:
+                                intention_queue.append(intention)
+                            else:
+                                intention_queue.pop(0)
+                                intention_queue.append(intention)
+                                if all(x == intention_queue[0] for x in intention_queue):
+                                    if intention != "no_action" and intention != old_intention:
+                                        if intention == "get_connectors":
+                                            if args.outer_restrict == 'working_area':
+                                                if righthand[0] < -0.4: send_intention_to_ros(intention)
+                                            else:
+                                                send_intention_to_ros(intention)
+                                        elif intention == "get_screws":
+                                            if args.outer_restrict == 'working_area':
+                                                if righthand[0] > 0.1: send_intention_to_ros(intention)
+                                            else:
+                                                send_intention_to_ros(intention)
+                                        elif intention == "get_wheels":
+                                            if args.outer_restrict == 'working_area':
+                                                if righthand[0] > 0.1: send_intention_to_ros(intention)
+                                            else:
+                                                send_intention_to_ros(intention)
+
+                                    old_intention = intention
 
                         cv2.putText(masked_frame, f"intention:{intention}", (2, frame.shape[0] - 52), cv2.FONT_HERSHEY_TRIPLEX, 0.4, (255,255,255))
                         cv2.putText(masked_frame, "right hand x: {:.2f}, y: {:.2f}, z: {:.2f}".format(landmarks[16,0],landmarks[16,1],landmarks[16,2]), (2, frame.shape[0] - 36), cv2.FONT_HERSHEY_TRIPLEX, 0.4, (255,255,255))
@@ -359,12 +384,14 @@ if __name__ == '__main__':
                     help="name for traj.pkl and camera video")
     parser.add_argument('--seq_len', default=5,
                         help="input frame window")
-    parser.add_argument('--pred_len', default=5,
-                        help="output predicted frame length")
+    parser.add_argument('--send_window', default=10,
+                        help="send if intention is consecutively recognized in send_window")
     parser.add_argument('--video', action="store_true",
                     help="save video, else save images")
     parser.add_argument('--restrict', type=str,default="ood",
                         help='four options:[no,working_area,ood,all]') 
+    parser.add_argument('--outer_restrict',type=str,default="working_area",
+                        help='outer restriction')
     args = parser.parse_args()
 
     intention_sender(args)

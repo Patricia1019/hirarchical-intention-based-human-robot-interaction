@@ -18,7 +18,6 @@ RETRACT_POSITION = (0.2,0,0.19,0,-0.7,-0.7,0)
 BASE = (-0.18,0.28,0.25,0,-0.7,-0.7,0)
 kinova_control_pub = rospy.Publisher("/kinova_demo/pose_cmd", PoseStamped, queue_size=1)
 kinova_grip_pub = rospy.Publisher("/siemens_demo/gripper_cmd", Float64MultiArray, queue_size=1)
-pub = rospy.Publisher('chatter', String, queue_size=10)
 def ComposePoseFromTransQuat(data_frame):
     # assert (len(data_frame.shape) == 1 and data_frame.shape[0] == 7)
     pose = Pose()
@@ -63,11 +62,12 @@ class Receiver:
         self.current_pose = current_pose
 
     def receive_data(self,data):
+        print(data.data)
         if data.data in INTENTION_LIST:
-            self.intention_list.append(data.data)
             action = self.decide_send_action(data.data)
             if action[0] and not self.executing:
                 print(action)
+                self.intention_list.append(data.data)
                 self.execute_action(action)
         if data.data in COMMAND_LIST:
             # self.command_list.append(data.data)
@@ -334,7 +334,7 @@ class Receiver:
                         else: # keep augular points stay as target points
                             tmp.append(target_list[i][j])
                     waypoints_list.append(tmp)
-            unique_actions = {5:["grip"],10:["wait3","open"]}
+            unique_actions = {5:["grip"],10:["wait1","open"]}
         return waypoints_list,target_list,unique_actions
 
     def get_command(self):
