@@ -13,6 +13,17 @@ LINES_BODY = [[9,10],[4,6],[1,3],
             [11,13],[13,15],[15,19],[19,17],[17,15],
             [24,26],[26,28],[32,30],
             [23,25],[25,27],[29,31]]
+LINES_UPPER_BODY = [[12,14],[14,16],[16,20],[20,18],[18,16],
+            [12,11],[11,23],[23,24],[24,12],
+            [11,13],[13,15],[15,19],[19,17],[17,15]]
+LINES_UPPER_BODY_TRUE = []
+for i in range(len(LINES_UPPER_BODY)):
+    connection = LINES_UPPER_BODY[i]
+    tmp = []
+    for j in connection:
+        number = j - 11
+        tmp.append(number)
+    LINES_UPPER_BODY_TRUE.append(tmp)
 
 COLORS_BODY = ["middle","right","left",
                 "right","right","right","right","right",
@@ -73,13 +84,17 @@ class BlazeposeRenderer:
             self.output = cv2.VideoWriter(output,fourcc,tracker.video_fps,(tracker.img_w, tracker.img_h)) 
 
     def is_present(self, body, lm_id):
-        return body.presence[lm_id] > self.tracker.presence_threshold
+        try:
+            return body.presence[lm_id] > self.tracker.presence_threshold
+        except:
+            return False
 
     def draw_landmarks(self, body):
         if self.show_rot_rect:
             cv2.polylines(self.frame, [np.array(body.rect_points)], True, (0,255,255), 2, cv2.LINE_AA)
         if self.show_landmarks:                
-            list_connections = LINES_BODY
+            list_connections = LINES_UPPER_BODY_TRUE
+            
             lines = [np.array([body.landmarks[point,:2] for point in line]) for line in list_connections if self.is_present(body, line[0]) and self.is_present(body, line[1])]
             cv2.polylines(self.frame, lines, False, (255, 180, 90), 2, cv2.LINE_AA)
             

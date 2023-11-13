@@ -256,6 +256,8 @@ def intention_sender(args):
                 if qBlazepose.has():
                     res = marshal.loads(qBlazepose.get().getData())
                     body = blazepose_model.inference(res)
+                    upperbody = np.concatenate((body.landmarks[11:25,:],body.landmarks[0:1,:]),axis=0)
+                    body.landmarks = upperbody
                     masked_frame = renderer.draw(masked_frame, body)
                     # print(f'blazepose{counter}')
 
