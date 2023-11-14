@@ -6,7 +6,8 @@ import cv2
 import depthai as dai
 import numpy as np
 import time
-
+from pathlib import Path
+FILE_DIR = Path(__file__).parent
 '''
 Spatial detection network demo.
     Performs inference on RGB camera and retrieves spatial location coordinates: x,y,z relative to the center of depth map.
@@ -173,6 +174,8 @@ with dai.Device(pipeline) as device:
         cv2.putText(frame, "NN fps: {:.2f}".format(fps), (2, frame.shape[0] - 4), cv2.FONT_HERSHEY_TRIPLEX, 0.4, (255,255,255))
         cv2.imshow("depth", depthFrameColor)
         cv2.imshow("preview", frame)
+        # cv2.imwrite(f'{FILE_DIR}/test_rgb.png',frame)
+        # cv2.imwrite(f'{FILE_DIR}/test_d.png',depthFrameColor)
 
         if cv2.waitKey(1) == ord('q'):
             break
