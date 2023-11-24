@@ -256,8 +256,9 @@ def intention_sender(args):
                 if qBlazepose.has():
                     res = marshal.loads(qBlazepose.get().getData())
                     body = blazepose_model.inference(res)
-                    upperbody = np.concatenate((body.landmarks[11:25,:],body.landmarks[0:1,:]),axis=0)
-                    body.landmarks = upperbody
+                    if body:
+                        upperbody = np.concatenate((body.landmarks[11:25,:],body.landmarks[0:1,:]),axis=0)
+                        body.landmarks = upperbody
                     masked_frame = renderer.draw(masked_frame, body)
                     # print(f'blazepose{counter}')
 
@@ -309,7 +310,7 @@ def intention_sender(args):
                         # else:
                         #     intention = ""
                         # old_upperbody = upperbody
-                        
+                        righthand_xpose = body.xyz[0]/10 + righthand[0]*100
                         if intention:
                             if len(intention_queue) < send_window:
                                 if len(intention_queue) == 0:
@@ -323,17 +324,17 @@ def intention_sender(args):
                                 if intention != old_intention and intention == intention_queue[-1] and intention != "no_action":
                                     if intention == "get_connectors":
                                         if args.outer_restrict == 'working_area':
-                                            if righthand[0] < -0.35: send_intention_to_ros(intention)
+                                            if righthand_xpose < -22: send_intention_to_ros(intention)
                                         else:
                                             send_intention_to_ros(intention)
                                     elif intention == "get_screws":
                                         if args.outer_restrict == 'working_area':
-                                            if righthand[0] > 0.1: send_intention_to_ros(intention)
+                                            if righthand_xpose > 10: send_intention_to_ros(intention)
                                         else:
                                             send_intention_to_ros(intention)
                                     elif intention == "get_wheels":
                                         if args.outer_restrict == 'working_area':
-                                            if righthand[0] > 0.1: send_intention_to_ros(intention)
+                                            if righthand_xpose > 10: send_intention_to_ros(intention)
                                         else:
                                             send_intention_to_ros(intention)
                                 old_intention = intention
@@ -344,8 +345,8 @@ def intention_sender(args):
                         cv2.putText(masked_frame, "right hand x: {:.2f}, y: {:.2f}, z: {:.2f}".format(landmarks[16,0],landmarks[16,1],landmarks[16,2]), (2, frame.shape[0] - 36), cv2.FONT_HERSHEY_TRIPLEX, 0.4, (255,255,255))
                         traj.append(body)
                         if not video:
-                            if not os.path.exists(f'{ROOT_DIR}/images{task[-3:]}'):
-                                os.mkdir(f'{ROOT_DIR}/images{task[-3:]}')
+                            # if not os.path.exists(f'{ROOT_DIR}/images{task[-3:]}'):
+                            os.makedirs(f'{ROOT_DIR}/images{task[-3:]}', exist_ok=True)
                             cv2.imwrite(f'{ROOT_DIR}/images{task[-3:]}/{frame_count}.png',masked_frame)
                         else:
                             video_out.write(masked_frame)
