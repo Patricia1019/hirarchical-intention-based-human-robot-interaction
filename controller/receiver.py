@@ -84,7 +84,7 @@ class Receiver:
                         self.plangraph.stage = "four_tubes"
                         get_num = 4 - len(self.plangraph.stage_record["four_tubes"])
                         for _ in range(get_num):
-                            action = self.decide_send_action(self.command)
+                            action = self.decide_send_action(old_command)
                             print(action)
                             self.command = None
                             self.execute_action(action)
@@ -99,7 +99,7 @@ class Receiver:
                     self.execute_action(action)
         
     def execute_action(self,action,index=0):
-        print(self.plangraph.action_history)
+        print(self.plangraph.stage)
         waypoints_list,target_list,unique_actions = self.generate_waypoints(action)
         kinova_control_msg = PoseStamped()
         kinova_control_msg.pose = ComposePoseFromTransQuat(waypoints_list[index])
@@ -181,6 +181,10 @@ class Receiver:
                         kinova_grip_pub.publish(kinova_grip_msg) 
                         time.sleep(self.GRIP_TIME)
                         break
+                kinova_grip_msg = Float64MultiArray()
+                kinova_grip_msg.data = [1] # 0 for close, 1 for open
+                kinova_grip_pub.publish(kinova_grip_msg) 
+                time.sleep(self.GRIP_TIME)
             else:
                 print(f"Invalid unique actions[{i}]!")
 
@@ -322,7 +326,7 @@ class Receiver:
             col = action[1]//2
             base = BASE
             get = (-0.28-x_interval*col,0.28-y_interval*row,0.2,0,-0.7,-0.7,0)
-            grip = (-0.28-x_interval*col,0.28-y_interval*row,-0.05,0,-0.7,-0.7,0)
+            grip = (-0.28-x_interval*col,0.28-y_interval*row,-0.045,0,-0.7,-0.7,0)
             # grip_way = (-0.26-x_interval*col,0.28-y_interval*row,-0.1,0,-0.8,-0.7,0)
             deliver = (0.3,0.3,0.25,0,-0.7,-0.6,-0.2) # TODO: move with hand
             # [retract,ready,get,grip,(close gripper),get,ready,deliver,(open gripper),retract]
@@ -350,7 +354,7 @@ class Receiver:
             col = action[1]
             base = BASE
             get = (-0.28-x_interval*col,-0.04,0.3,0,-0.7,-0.7,0)
-            grip = (-0.28-x_interval*col,-0.04,0.16,0,-0.7,-0.7,0)
+            grip = (-0.28-x_interval*col,-0.04,0.15,0,-0.7,-0.7,0)
             base_long = (-0.18,-0.04,0.3,0,-0.7,-0.7,0)
             # grip_way = (-0.26-x_interval*col,0.28-y_interval*row,-0.1,0,-0.8,-0.7,0)
             deliver = (0.3,0.3,0.35,0,-0.7,-0.6,-0.2) # TODO: move with hand
@@ -386,7 +390,7 @@ class Receiver:
         REVERT_TUBE = {"get_short_tubes":"long","get_long_tubes":"short"}
         if data == "get_connectors": # decide to get short tubes or get long tubes
             for stage in ["bottom","top"]:
-                if len(self.plangraph.stage_record[stage]) < 4:
+                if len(self.plangraph.stage_record[stage]) < 4 and self.plangraph.stage != "four_tubes":
                     self.plangraph.stage = stage
                     for key in REVERT_TUBE.keys():
                         if self.plangraph.stage_record[stage].count(key) == 2:
