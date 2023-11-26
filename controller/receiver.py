@@ -80,7 +80,7 @@ class Receiver:
             if not self.executing and self.command:
                 old_command = self.command
                 if self.command == "short":
-                    if self.plangraph.stage == None and len(self.plangraph.stage_record["four_tubes"]) < 4:
+                    if self.plangraph.stage == None and len(self.plangraph.stage_record["four_tubes"]) < 4 and len(self.plangraph.stage_record["bottom"]) == 4:
                         self.plangraph.stage = "four_tubes"
                         get_num = 4 - len(self.plangraph.stage_record["four_tubes"])
                         for _ in range(get_num):
