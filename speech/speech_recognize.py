@@ -158,8 +158,9 @@ class VADAudio(Audio):
                     yield None
                     ring_buffer.clear()
 
-def send_command_to_ros(command="stop"):
+def send_command_to_ros(command="stop",count=0):
     pub = rospy.Publisher('chatter', String, queue_size=10)
+    command = f"{command}_{count}"
     rospy.init_node('command', anonymous=True)
     rospy.loginfo(command)
     rate = rospy.Rate(10) # 10hz
@@ -194,6 +195,7 @@ def main(ARGS):
     # Stream from microphone to DeepSpeech using VAD
     stream_context = model.createStream()
     wav_data = bytearray()
+    count = 0
     for frame in frames:
         if frame is not None:
             logging.debug("streaming frame")
@@ -222,7 +224,8 @@ def main(ARGS):
                 if send_flag:
                     assert text in ["stop","short","long","get up","spin"]
                     print(f"Recognized:{text}")
-                    send_command_to_ros(text)
+                    count += 1
+                    send_command_to_ros(text,count)
 
                 stream_context = model.createStream()
         # else:

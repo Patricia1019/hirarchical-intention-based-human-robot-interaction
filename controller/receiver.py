@@ -45,10 +45,12 @@ class Receiver:
         self.intention_list = []
         self.command_list = []
         self.command = None
+        self.old_command_data = None
         self.GRIP_TIME = 1.5
         self.plangraph = PlanGraph()
         self.REVERT_LIST = {"grip":"open","open":"grip"}
         self.executing = False
+        self.hand_getting_object = False
 
     def receive_pose(self,data):
         pos_x = data.pose.position.x
@@ -63,28 +65,38 @@ class Receiver:
 
     def receive_data(self,data):
         print(data.data)
+        split_data = data.data.split('_')[0]
         if data.data in INTENTION_LIST:
             action = self.decide_send_action(data.data)
             if action[0] and not self.executing:
                 print(action)
                 self.intention_list.append(data.data)
                 self.execute_action(action)
-        if data.data in COMMAND_LIST:
+        if split_data in COMMAND_LIST and data.data != self.old_command_data:
             # self.command_list.append(data.data)
-            self.command = data.data
+            self.command = split_data
+            self.old_command_data = data.data
             # print(data.data)
-            if self.command == "short" and not self.executing:
-                if self.plangraph.stage == None and len(self.plangraph.stage_record["four_tubes"]) < 4:
-                    self.plangraph.stage = "four_tubes"
-                    for _ in range(4):
-                        action = self.decide_send_action(data.data)
+            if not self.executing and self.command:
+                old_command = self.command
+                if self.command == "short":
+                    if self.plangraph.stage == None and len(self.plangraph.stage_record["four_tubes"]) < 4:
+                        self.plangraph.stage = "four_tubes"
+                        get_num = 4 - len(self.plangraph.stage_record["four_tubes"])
+                        for _ in range(get_num):
+                            action = self.decide_send_action(self.command)
+                            print(action)
+                            self.command = None
+                            self.execute_action(action)
+                    else:
+                        action = self.decide_send_action(self.command)
                         print(action)
                         self.command = None
                         self.execute_action(action)
-            elif self.command and not self.executing:
-                action = self.decide_send_action(data.data)
-                print(action)
-                self.execute_action(action)
+                else:
+                    action = self.decide_send_action(self.command)
+                    print(action)
+                    self.execute_action(action)
         
     def execute_action(self,action,index=0):
         print(self.plangraph.action_history)
@@ -157,8 +169,27 @@ class Receiver:
                 kinova_grip_msg.data = [1] # 0 for close, 1 for open
                 kinova_grip_pub.publish(kinova_grip_msg) 
                 time.sleep(self.GRIP_TIME)
+            elif unique_actions[i] == "force_triggered":
+                t1 = time.time()
+                old_force = self.force
+                # pdb.set_trace()
+                while (time.time()-t1) < 15:
+                    if (abs(self.force[0]-old_force[0])+abs(self.force[1]-old_force[1])+abs(self.force[2]-old_force[2])) > 6:
+                    # if self.hand_getting_object:
+                        kinova_grip_msg = Float64MultiArray()
+                        kinova_grip_msg.data = [1] # 0 for close, 1 for open
+                        kinova_grip_pub.publish(kinova_grip_msg) 
+                        time.sleep(self.GRIP_TIME)
+                        break
             else:
                 print(f"Invalid unique actions[{i}]!")
+
+    def hand_get(self,data):
+        force = data.data
+        self.force = force
+        # FORCE_DEFAULT = (6.6,-3,-13)
+        # if (abs(force[0]-FORCE_DEFAULT[0])+abs(force[1]-FORCE_DEFAULT[1])+abs(force[2]-FORCE_DEFAULT[2])) > 3:
+        #     self.hand_getting_object = True
 
     def retract(self,current_pose,ori_targets,ori_unique_actions,index):
         print("retract")
@@ -309,7 +340,8 @@ class Receiver:
                         else: # keep augular points stay as target points
                             tmp.append(target_list[i][j])
                     waypoints_list.append(tmp)
-            unique_actions = {5:["grip"],9:["wait1","open"]}
+            # unique_actions = {5:["grip"],9:["wait1","open"]}
+            unique_actions = {5:["grip"],9:["force_triggered"]}
         if action[0] == "get_long_tubes":
             retract = RETRACT_POSITION
             ready = (0.2,0.32,0.35,0,-0.7,-0.7,0)
@@ -337,7 +369,8 @@ class Receiver:
                         else: # keep augular points stay as target points
                             tmp.append(target_list[i][j])
                     waypoints_list.append(tmp)
-            unique_actions = {5:["grip"],10:["wait1","open"]}
+            # unique_actions = {5:["grip"],10:["wait1","open"]}
+            unique_actions = {5:["grip"],10:["force_triggered"]}
         return waypoints_list,target_list,unique_actions
 
     def get_command(self):
@@ -406,6 +439,7 @@ def listener():
     # rospy.Subscriber("chatter", String, controller)
     rospy.Subscriber("chatter", String, receiver.receive_data)
     rospy.Subscriber("/kinova/pose_tool_in_base", PoseStamped, receiver.receive_pose, queue_size=1)
+    rospy.Subscriber("/kinova/tool_force",Float64MultiArray,receiver.hand_get)
     # spin() simply keeps python from exiting until this node is stopped
     rospy.spin()
 
