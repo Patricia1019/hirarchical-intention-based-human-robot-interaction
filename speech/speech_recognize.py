@@ -218,6 +218,7 @@ def main(ARGS):
                         text = "spin"
                     else:
                         send_flag = False 
+                        # print(f"listen:{text}")
                 if send_flag:
                     assert text in ["stop","short","long","get up","spin"]
                     print(f"Recognized:{text}")

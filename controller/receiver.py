@@ -74,7 +74,7 @@ class Receiver:
             self.command = data.data
             # print(data.data)
             if self.command == "short" and not self.executing:
-                if len(self.plangraph.stage_record["four_tubes"]) < 4:
+                if self.plangraph.stage == None and len(self.plangraph.stage_record["four_tubes"]) < 4:
                     self.plangraph.stage = "four_tubes"
                     for _ in range(4):
                         action = self.decide_send_action(data.data)
@@ -87,6 +87,7 @@ class Receiver:
                 self.execute_action(action)
         
     def execute_action(self,action,index=0):
+        print(self.plangraph.action_history)
         waypoints_list,target_list,unique_actions = self.generate_waypoints(action)
         kinova_control_msg = PoseStamped()
         kinova_control_msg.pose = ComposePoseFromTransQuat(waypoints_list[index])
@@ -135,6 +136,8 @@ class Receiver:
                         self.plangraph.tube_count["long"] += 1
                     self.plangraph.action_history.append(action[0])
                     self.plangraph.stage_record[self.plangraph.stage].append(action[0])
+                    if len(self.plangraph.stage_record[self.plangraph.stage]) == 4:
+                        self.plangraph.stage = None
         self.executing = False
         return
     

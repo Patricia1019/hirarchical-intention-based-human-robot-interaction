@@ -392,7 +392,7 @@ if __name__ == '__main__':
                     help="name for traj.pkl and camera video")
     parser.add_argument('--seq_len', default=5,
                         help="input frame window")
-    parser.add_argument('--send_window', default=10,
+    parser.add_argument('--send_window', default=7,
                         help="send if intention is consecutively recognized in send_window")
     parser.add_argument('--video', action="store_true",
                     help="save video, else save images")
