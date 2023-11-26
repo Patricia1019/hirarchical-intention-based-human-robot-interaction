@@ -174,7 +174,7 @@ class Receiver:
                 old_force = self.force
                 # pdb.set_trace()
                 while (time.time()-t1) < 15:
-                    if (abs(self.force[0]-old_force[0])+abs(self.force[1]-old_force[1])+abs(self.force[2]-old_force[2])) > 6:
+                    if (abs(self.force[0]-old_force[0])+abs(self.force[1]-old_force[1])+abs(self.force[2]-old_force[2])) > 15:
                     # if self.hand_getting_object:
                         kinova_grip_msg = Float64MultiArray()
                         kinova_grip_msg.data = [1] # 0 for close, 1 for open
