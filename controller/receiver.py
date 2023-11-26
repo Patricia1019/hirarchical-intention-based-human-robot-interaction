@@ -77,6 +77,8 @@ class Receiver:
             self.command = split_data
             self.old_command_data = data.data
             # print(data.data)
+            if self.command == "stop" and self.executing:
+                self.intention_list.pop(-1)
             if not self.executing and self.command:
                 old_command = self.command
                 if self.command == "short":
@@ -85,18 +87,22 @@ class Receiver:
                         get_num = 4 - len(self.plangraph.stage_record["four_tubes"])
                         for _ in range(get_num):
                             action = self.decide_send_action(old_command)
+                            if action[0]:
+                                print(action)
+                                self.command = None
+                                self.execute_action(action)
+                    else:
+                        action = self.decide_send_action(self.command)
+                        if action[0]:
                             print(action)
                             self.command = None
                             self.execute_action(action)
-                    else:
-                        action = self.decide_send_action(self.command)
+                else:
+                    action = self.decide_send_action(self.command)
+                    if action[0]:
                         print(action)
                         self.command = None
                         self.execute_action(action)
-                else:
-                    action = self.decide_send_action(self.command)
-                    print(action)
-                    self.execute_action(action)
         
     def execute_action(self,action,index=0):
         print(self.plangraph.stage)
@@ -389,18 +395,25 @@ class Receiver:
         #     assert self.plangraph.tube_count[key] < self.plangraph.TUBE_SUM[key]
         REVERT_TUBE = {"get_short_tubes":"long","get_long_tubes":"short"}
         if data == "get_connectors": # decide to get short tubes or get long tubes
-            for stage in ["bottom","top"]:
-                if len(self.plangraph.stage_record[stage]) < 4 and self.plangraph.stage != "four_tubes":
-                    self.plangraph.stage = stage
-                    for key in REVERT_TUBE.keys():
-                        if self.plangraph.stage_record[stage].count(key) == 2:
-                            return [f"get_{REVERT_TUBE[key]}_tubes",self.plangraph.tube_count[REVERT_TUBE[key]]]
-                    if len(self.plangraph.stage_record[stage]) > 0:
-                        last_tube = self.plangraph.stage_record[stage][-1]
-                        tube_key = REVERT_TUBE[last_tube]
-                    else:
-                        tube_key = "short"
-                    return [f"get_{tube_key}_tubes",self.plangraph.tube_count[tube_key]]
+            # for stage in ["bottom","top"]:
+            #     if len(self.plangraph.stage_record[stage]) < 4 and self.plangraph.stage != "four_tubes":
+            if len(self.plangraph.stage_record["bottom"]) < 4:
+                stage = "bottom"
+            elif self.intention_list.count(data) >= 4 and self.plangraph.stage != "four_tubes":
+                stage = "top"
+            else:
+                return None,None
+            self.plangraph.stage = stage
+            for key in REVERT_TUBE.keys():
+                if self.plangraph.stage_record[stage].count(key) == 2:
+                    return [f"get_{REVERT_TUBE[key]}_tubes",self.plangraph.tube_count[REVERT_TUBE[key]]]
+            if len(self.plangraph.stage_record[stage]) > 0:
+                last_tube = self.plangraph.stage_record[stage][-1]
+                tube_key = REVERT_TUBE[last_tube]
+            else:
+                tube_key = "short"
+            return [f"get_{tube_key}_tubes",self.plangraph.tube_count[tube_key]]
+
      
         if data == "short":
             if self.plangraph.tube_count["short"] < self.plangraph.TUBE_SUM["short"]:
