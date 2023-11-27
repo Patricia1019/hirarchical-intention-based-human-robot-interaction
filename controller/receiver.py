@@ -34,10 +34,11 @@ class PlanGraph:
     def __init__(self):
         self.TUBE_SUM = {"short":8,"long":4}
         self.tube_count = {"short":0,"long":0}
-        self.screw_count = 0
+        self.screw_count = {"bottom":0,"four_tubes":0,"top":0}
         self.action_history = []
-        self.stage_record = {"bottom":[],"four_tubes":[],"top":[]}
+        self.stage_record = {"bottom":[],"four_tubes":[],"top":[]} # tube records
         self.stage = None
+        self.stage_history = [] # stages that have already been completed
 
 
 class Receiver:
@@ -46,7 +47,7 @@ class Receiver:
         self.command_list = []
         self.command = None
         self.old_command_data = None
-        self.GRIP_TIME = 1.5
+        self.GRIP_TIME = 1.2
         self.plangraph = PlanGraph()
         self.REVERT_LIST = {"grip":"open","open":"grip"}
         self.executing = False
@@ -66,6 +67,13 @@ class Receiver:
     def receive_data(self,data):
         print(data.data)
         split_data = data.data.split('_')[0]
+
+        if ',' in data.data: # debug action
+            action = [data.data.split(',')[0],int(data.data.split(',')[1])]
+            if action[0] and not self.executing:
+                print(action)
+                self.execute_action(action)
+
         if data.data in INTENTION_LIST:
             action = self.decide_send_action(data.data)
             if action[0] and not self.executing:
@@ -113,6 +121,9 @@ class Receiver:
         i = index
         if len(waypoints_list) == 0: return
         self.executing = True
+        if i in unique_actions.keys():
+            # time.sleep(0.2)
+            self.execute_unique_actions(unique_actions[i])
         while i < len(waypoints_list):
             current_pose = self.current_pose
             command = self.command
@@ -153,9 +164,11 @@ class Receiver:
                     elif "long" in action[0]:
                         self.plangraph.tube_count["long"] += 1
                     self.plangraph.action_history.append(action[0])
-                    self.plangraph.stage_record[self.plangraph.stage].append(action[0])
-                    if len(self.plangraph.stage_record[self.plangraph.stage]) == 4:
-                        self.plangraph.stage = None
+                    if self.plangraph.stage:
+                        self.plangraph.stage_record[self.plangraph.stage].append(action[0])
+                        if len(self.plangraph.stage_record[self.plangraph.stage]) == 4:
+                            self.plangraph.stage_history.append(self.plangraph.stage)
+                            self.plangraph.stage = None
         self.executing = False
         return
     
@@ -325,7 +338,6 @@ class Receiver:
         if action[0] == "get_short_tubes":
             retract = RETRACT_POSITION
             ready = (0.2,0.32,0.25,0,-0.7,-0.7,0)
-            # ready_way = (0.2,0.32+0.18,0.19,0,-0.7,-0.7,0)
             x_interval = 0.10
             y_interval = 0.16
             row = action[1]%2
@@ -333,25 +345,11 @@ class Receiver:
             base = BASE
             get = (-0.28-x_interval*col,0.28-y_interval*row,0.2,0,-0.7,-0.7,0)
             grip = (-0.28-x_interval*col,0.28-y_interval*row,-0.045,0,-0.7,-0.7,0)
-            # grip_way = (-0.26-x_interval*col,0.28-y_interval*row,-0.1,0,-0.8,-0.7,0)
             deliver = (0.3,0.3,0.25,0,-0.7,-0.6,-0.2) # TODO: move with hand
-            # [retract,ready,get,grip,(close gripper),get,ready,deliver,(open gripper),retract]
-            # waypoints_list = [retract,ready_way,get,grip_way,get,ready_way,deliver,retract]
             target_list = [retract,ready,base,get,grip,get,base,ready,deliver,ready,retract]
-            waypoints_list = []
-            for i in range(len(target_list)):
-                if i == 0:
-                    waypoints_list.append(target_list[i])
-                if i > 0:
-                    tmp = []
-                    for j in range(len(target_list[i])):
-                        if j < 3: # only adjust position points
-                            tmp.append(target_list[i][j]+0.7*(target_list[i][j]-target_list[i-1][j]))
-                        else: # keep augular points stay as target points
-                            tmp.append(target_list[i][j])
-                    waypoints_list.append(tmp)
-            # unique_actions = {5:["grip"],9:["wait1","open"]}
             unique_actions = {5:["grip"],9:["force_triggered"]}
+            speed = [0.7] * len(target_list)
+
         if action[0] == "get_long_tubes":
             retract = RETRACT_POSITION
             ready = (0.2,0.32,0.35,0,-0.7,-0.7,0)
@@ -362,25 +360,58 @@ class Receiver:
             get = (-0.28-x_interval*col,-0.04,0.3,0,-0.7,-0.7,0)
             grip = (-0.28-x_interval*col,-0.04,0.15,0,-0.7,-0.7,0)
             base_long = (-0.18,-0.04,0.3,0,-0.7,-0.7,0)
-            # grip_way = (-0.26-x_interval*col,0.28-y_interval*row,-0.1,0,-0.8,-0.7,0)
             deliver = (0.3,0.3,0.35,0,-0.7,-0.6,-0.2) # TODO: move with hand
-            # [retract,ready,get,grip,(close gripper),get,ready,deliver,(open gripper),retract]
-            # waypoints_list = [retract,ready_way,get,grip_way,get,ready_way,deliver,retract]
             target_list = [retract,ready,base,get,grip,get,base_long,base,ready,deliver,ready,retract]
-            waypoints_list = []
-            for i in range(len(target_list)):
-                if i == 0:
-                    waypoints_list.append(target_list[i])
-                if i > 0:
-                    tmp = []
-                    for j in range(len(target_list[i])):
-                        if j < 3: # only adjust position points
-                            tmp.append(target_list[i][j]+0.7*(target_list[i][j]-target_list[i-1][j]))
-                        else: # keep augular points stay as target points
-                            tmp.append(target_list[i][j])
-                    waypoints_list.append(tmp)
-            # unique_actions = {5:["grip"],10:["wait1","open"]}
             unique_actions = {5:["grip"],10:["force_triggered"]}
+            speed = [0.7] * len(target_list)
+
+        if action[0] == "spin_bottom":
+            retract = RETRACT_POSITION
+            ready = (0.48,0.06,0.19,0,-0.7,-0.7,0)
+            grip = (0.48,0.06,-0.085,0,-0.7,-0.7,0)
+            spin_s2l = (0.3,0.16,-0.085,0,1,0,0)
+            spin_l2s = (0.4,0.27,-0.085,0,1,0,0)
+            up = (0.3,0.16,0.19,0,1,0,0)
+            back = (0.48,0.05,0.19,0,1,0,0)
+            if action[1] % 4 == 0:
+                target_list = [ready,grip]
+                unique_actions = {2:["grip"]}
+                speed = [0.7] * len(target_list)
+            elif action[1] % 4 == 1:
+                target_list = [spin_s2l]
+                unique_actions = {}
+                speed = [0.7] * len(target_list)
+            elif action[1] % 4 == 2:
+                # speed = 0.3
+                target_list = [up,back,ready,grip,spin_l2s]
+                unique_actions = {0:["open"],4:["grip"]}
+                speed = [0.7] * len(target_list)
+                speed[-1] = 0
+            elif action[1] % 4 == 3:
+                # speed = 0.3
+                target_list = [up,back,ready,grip,spin_s2l,up,back,retract]
+                unique_actions = {0:["open"],4:["grip"],5:["wait5","open"]} # TODO:wait?
+                speed = [0.7] * len(target_list)
+                speed[-4] = 0
+                speed[-1] = 0
+
+        if action[0] == "spin_four_tubes":
+            pass
+        if action[0] == "spin_top":
+            pass
+        
+        waypoints_list = []
+        for i in range(len(target_list)):
+            if i == 0:
+                waypoints_list.append(target_list[i])
+            else:
+                tmp = []
+                for j in range(len(target_list[i])):
+                    if j < 3: # only adjust position points
+                        tmp.append(target_list[i][j]+speed[i]*(target_list[i][j]-target_list[i-1][j]))
+                    else: # keep augular points stay as target points
+                        tmp.append(target_list[i][j])
+                waypoints_list.append(tmp)
         return waypoints_list,target_list,unique_actions
 
     def get_command(self):
@@ -414,7 +445,35 @@ class Receiver:
                 tube_key = "short"
             return [f"get_{tube_key}_tubes",self.plangraph.tube_count[tube_key]]
 
-     
+        if data == "get_screws" and self.plangraph.stage_history:
+            if self.plangraph.stage_history[-1] == "bottom":
+                stage = "bottom"
+                self.plangraph.screw_count[stage] += 1
+                if self.plangraph.screw_count[stage] == 1:
+                    return ["spin_bottom",self.plangraph.action_history.count("spin_bottom")]
+                if self.plangraph.screw_count[stage] == 3:
+                    self.plangraph.screw_count[stage] = 1
+                    return ["spin_bottom",self.plangraph.action_history.count("spin_bottom")]
+            elif self.plangraph.stage_history[-1] == "four_tubes":
+                stage = "four_tubes"
+                self.plangraph.screw_count[stage] += 1
+                if self.plangraph.screw_count[stage] == 3:
+                    self.plangraph.screw_count[stage] = 1
+                    return ["spin_four_tubes",self.plangraph.action_history.count("spin_four_tubes")]
+            elif self.plangraph.stage_history[-1] == "top":
+                if len(self.plangraph.stage_history) == 2:
+                    stage = "top"
+                    self.plangraph.screw_count[stage] += 1
+                    if self.plangraph.screw_count[stage] == 3:
+                        self.plangraph.screw_count[stage] = 1
+                        return ["spin_bottom",self.plangraph.action_history.count("spin_bottom")]
+                elif len(self.plangraph.stage_history) == 3:
+                    stage = "top"
+                    self.plangraph.screw_count[stage] += 1
+                    if self.plangraph.screw_count[stage] == 3:
+                        self.plangraph.screw_count[stage] = 1
+                        return ["spin_top",self.plangraph.action_history.count("spin_top")]
+
         if data == "short":
             if self.plangraph.tube_count["short"] < self.plangraph.TUBE_SUM["short"]:
                 return ["get_short_tubes",self.plangraph.tube_count["short"]]
