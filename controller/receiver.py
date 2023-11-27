@@ -349,6 +349,7 @@ class Receiver:
             target_list = [retract,ready,base,get,grip,get,base,ready,deliver,ready,retract]
             unique_actions = {5:["grip"],9:["force_triggered"]}
             speed = [0.7] * len(target_list)
+            speed[-1] = 0
 
         if action[0] == "get_long_tubes":
             retract = RETRACT_POSITION
@@ -364,6 +365,7 @@ class Receiver:
             target_list = [retract,ready,base,get,grip,get,base_long,base,ready,deliver,ready,retract]
             unique_actions = {5:["grip"],10:["force_triggered"]}
             speed = [0.7] * len(target_list)
+            speed[-1] = 0
 
         if action[0] == "spin_bottom":
             retract = RETRACT_POSITION
@@ -396,7 +398,7 @@ class Receiver:
                 speed[-1] = 0
 
         if action[0] == "spin_four_tubes":
-            self.plangraph.stage_history = ["bottom","top","four_tubes"]
+            # self.plangraph.stage_history = ["bottom","top","four_tubes"] # for debugging
             assert len(self.plangraph.stage_history) > 1, "spin_four_tubes should be executed after at least two stages have been done!"
             if len(self.plangraph.stage_history) == 3:
                 retract = RETRACT_POSITION
