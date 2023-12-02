@@ -27,25 +27,25 @@ ROOT_DIR = f'{FILE_DIR}/{task[:-3]}'
 os.environ["DISPLAY"]=":0"
 class Skeleton:
     def parents(self):
-        parents = [0,0,11,12,13,14,15,16,15,16,15,16,11,12]
-        # parents = [14,14,0,1,2,3,4,5,4,5,4,5,0,1]
-        others = [24,19,20]
-        # others = [13,8,9]
+        # parents = [0,0,11,12,13,14,15,16,15,16,15,16,11,12]
+        parents = [14,14,0,1,2,3,4,5,4,5,4,5,0,1]
+        # others = [24,19,20]
+        others = [13,8,9]
         parents.extend(others)
         return np.array(parents)
 
     def children(self):
-        children = np.arange(11,25)
-        # children = np.arange(0,14)
-        others = np.array([23,17,18])
-        # others = np.array([12,6,7])
+        # children = np.arange(11,25)
+        children = np.arange(0,14)
+        # others = np.array([23,17,18])
+        others = np.array([12,6,7])
         children = np.append(children,others)
         return children
 
     def joints_right(self):
         right = []
-        for i in range(12,26,2):
-        # for i in range(1,15,2):
+        # for i in range(12,26,2):
+        for i in range(1,15,2):
             right.append(i)
         return right
 
@@ -246,6 +246,7 @@ poses_norm = 2*(poses-poses.min())/(poses.max()-poses.min())
 # poses_norm = 2*(poses_norm-poses_norm.min(0).min(0))/(poses_norm.max(0).max(0)-poses_norm.min(0).min(0))
 poses_world = camera_to_world(poses_norm)
 poses_world[:, :, 2] -= np.min(poses_world[:, :, 2])
+pdb.set_trace()
 np.save(f'{ROOT_DIR}/{task}.npy',poses_world)
 predictions = {"ours":poses_world}
 # ROOT_DIR = f'{FILE_DIR}/../close_estimation/{task[:-3]}'
