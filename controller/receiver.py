@@ -379,6 +379,7 @@ class Receiver:
             middle_spin = (0.48,0.06,-0.085,0,1,1,0)
             spin = (0.4,0.27,-0.085,0,1,0,0)
             spin_final = (0.5,0.27,-0.085,0,1,-1,0)
+            grip_final = (.48,0.06,-0.085,0,1,-1,0)
             up = (0.5,0.27,0.19,0,1,-1,0)
             back = (0.48,0.05,0.19,0,1,0,0)
             if action[1] % 4 == 0:
@@ -396,8 +397,8 @@ class Receiver:
                 speed = [0.7] * len(target_list)
                 speed[-1] = 0
             elif action[1] % 4 == 3:
-                target_list = [spin_final,up,back,retract]
-                unique_actions = {target_list.index(spin_final)+1:["wait10","open"]}
+                target_list = [spin_final,up,grip_final,back,retract]
+                unique_actions = {target_list.index(spin_final)+1:["open"],target_list.index(grip_final)+1:["grip","wait10","open"]}
                 speed = [0.7] * len(target_list)  
                 speed[-2] = 0
                 speed[-1] = 0
@@ -452,6 +453,7 @@ class Receiver:
             middle_spin = (0.48,0.06,0.11,0,1,1,0)
             spin = (0.4,0.27,0.11,0,1,0,0)
             spin_final = (0.5,0.27,0.11,0,1,-1,0)
+            grip_final = (0.48,0.06,0.11,0,1,-1,0)
             up = (0.5,0.27,0.19,0,1,-1,0)
             back = (0.48,0.05,0.19,0,1,0,0)
             if action[1] % 4 == 0:
@@ -469,9 +471,10 @@ class Receiver:
                 speed = [0.7] * len(target_list)
                 speed[-1] = 0
             elif action[1] % 4 == 3:
-                target_list = [spin_final,up,back,retract]
-                unique_actions = {target_list.index(spin_final)+1:["wait10","open"]}
-                speed = [0.7] * len(target_list)  
+                target_list = [spin_final,up,grip_final,back,retract]
+                unique_actions = {target_list.index(spin_final)+1:["open"],target_list.index(grip_final)+1:["grip","wait10","open"]}
+                speed = [0.7] * len(target_list) 
+                speed[-3] = 0 
                 speed[-2] = 0
                 speed[-1] = 0
         
