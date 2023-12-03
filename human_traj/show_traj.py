@@ -246,7 +246,7 @@ poses_norm = 2*(poses-poses.min())/(poses.max()-poses.min())
 # poses_norm = 2*(poses_norm-poses_norm.min(0).min(0))/(poses_norm.max(0).max(0)-poses_norm.min(0).min(0))
 poses_world = camera_to_world(poses_norm)
 poses_world[:, :, 2] -= np.min(poses_world[:, :, 2])
-pdb.set_trace()
+# pdb.set_trace()
 np.save(f'{ROOT_DIR}/{task}.npy',poses_world)
 predictions = {"ours":poses_world}
 # ROOT_DIR = f'{FILE_DIR}/../close_estimation/{task[:-3]}'

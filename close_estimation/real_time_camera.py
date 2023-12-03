@@ -11,6 +11,7 @@ import numpy as np
 import argparse
 import torch
 import pickle
+import shutil
 sys.path.append(f'{FILE_DIR}/../traj_intention')
 from predict import IntentionPredictor
 from Dataset import INTENTION_LIST
@@ -51,7 +52,7 @@ if __name__ == '__main__':
                     help="sync the output of detection network with the input of pose estimation network")
     parser.add_argument('--show', action="store_true",
                     help="show real time camera video")
-    parser.add_argument('--task', default="test",
+    parser.add_argument('--task', default="test001",
                     help="name for traj.pkl and camera video")
     parser.add_argument('--seq_len', default=5,
                         help="input frame window")
@@ -99,8 +100,14 @@ if __name__ == '__main__':
     send_window = 10
     traj = []
     video = False
-    ROOT_DIR = FILE_DIR
     task = args.task
+    ROOT_DIR = f'{FILE_DIR}/../human_traj/{task[:-3]}'
+    if not os.path.exists(ROOT_DIR):
+        os.mkdir(ROOT_DIR)
+    if os.path.exists(f'{ROOT_DIR}/images{task[-3:]}'):
+        # If it exists, remove the entire directory and its contents
+        shutil.rmtree(f'{ROOT_DIR}/images{task[-3:]}')
+    os.makedirs(f'{ROOT_DIR}/images{task[-3:]}')
     while True:
         frame, body = tracker.next_frame()
         if frame is None: 
@@ -148,7 +155,7 @@ if __name__ == '__main__':
                 print(f"FPS:{count/(time.time()-t1)}")
 
         # cv2.imwrite(f'./images/{count}.png',frame)
-        if key == 27 or key == ord('q'):
+        if cv2.waitKey(1) == ord('q'):
             break
 
     file = open(f'{ROOT_DIR}/{task}.pkl', 'wb')
