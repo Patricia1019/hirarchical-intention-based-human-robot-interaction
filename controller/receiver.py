@@ -365,7 +365,7 @@ class Receiver:
             base_long = (-0.18,-0.04,0.3,0,-0.7,-0.7,0)
             deliver = (0.3,0.3,0.35,0,-0.7,-0.6,-0.2) # TODO: move with hand
             # target_list = [retract,ready,base,get,grip,get,base_long,base,ready,deliver,ready,retract]
-            unique_actions = {5:["grip"],10:["force_triggered"]}
+            # unique_actions = {5:["grip"],10:["force_triggered"]}
             target_list = [ready,base,get,grip,get,base_long,base,ready,deliver,ready]
             unique_actions = {target_list.index(grip)+1:["grip"],target_list.index(deliver)+1:["force_triggered"]}
             speed = [0.7] * len(target_list)
@@ -373,32 +373,33 @@ class Receiver:
 
         if action[0] == "spin_bottom":
             retract = RETRACT_POSITION
-            ready = (0.48,0.06,0.19,0,-0.7,-0.7,0)
-            grip = (0.48,0.06,-0.085,0,-0.7,-0.7,0)
-            spin_s2l = (0.3,0.16,-0.085,0,1,0,0)
-            spin_l2s = (0.4,0.27,-0.085,0,1,0,0)
-            up = (0.3,0.16,0.19,0,1,0,0)
+            pre_ready = (0.58,0.25,0.19,0,-0.7,-0.7,0)
+            ready = (0.58,0.25,0.19,0,0,1,0)
+            grip = (0.58,0.25,-0.085,0,0,1,0)
+            middle_spin = (0.48,0.06,-0.085,0,1,1,0)
+            spin = (0.4,0.27,-0.085,0,1,0,0)
+            spin_final = (0.5,0.27,-0.085,0,1,-1,0)
+            up = (0.5,0.27,0.19,0,1,-1,0)
             back = (0.48,0.05,0.19,0,1,0,0)
             if action[1] % 4 == 0:
                 target_list = [ready,grip]
-                unique_actions = {2:["grip"]}
+                unique_actions = {target_list.index(grip)+1:["grip"]}
                 speed = [0.7] * len(target_list)
             elif action[1] % 4 == 1:
-                target_list = [spin_s2l]
+                target_list = [middle_spin]
                 unique_actions = {}
                 speed = [0.7] * len(target_list)
+                speed[-1] = 0
             elif action[1] % 4 == 2:
-                # speed = 0.3
-                target_list = [up,back,ready,grip,spin_l2s]
-                unique_actions = {0:["open"],4:["grip"]}
+                target_list = [spin]
+                unique_actions = {}
                 speed = [0.7] * len(target_list)
                 speed[-1] = 0
             elif action[1] % 4 == 3:
-                # speed = 0.3
-                target_list = [up,back,ready,grip,spin_s2l,up,back,retract]
-                unique_actions = {0:["open"],4:["grip"],5:["wait5","open"]} # TODO:wait?
-                speed = [0.7] * len(target_list)
-                speed[-4] = 0
+                target_list = [spin_final,up,back,retract]
+                unique_actions = {target_list.index(spin_final)+1:["wait10","open"]}
+                speed = [0.7] * len(target_list)  
+                speed[-2] = 0
                 speed[-1] = 0
 
         if action[0] == "spin_four_tubes":
@@ -445,32 +446,33 @@ class Receiver:
 
         if action[0] == "spin_top":
             retract = RETRACT_POSITION
-            ready = (0.48,0.06,0.19,0,-0.7,-0.7,0)
-            grip = (0.48,0.06,0.11,0,-0.7,-0.7,0)
-            spin_s2l = (0.3,0.16,0.11,0,1,0,0)
-            spin_l2s = (0.4,0.27,0.11,0,1,0,0)
-            up = (0.3,0.16,0.19,0,1,0,0)
+            pre_ready = (0.58,0.25,0.19,0,-0.7,-0.7,0)
+            ready = (0.58,0.25,0.19,0,0,1,0)
+            grip = (0.58,0.25,0.11,0,0,1,0)
+            middle_spin = (0.48,0.06,0.11,0,1,1,0)
+            spin = (0.4,0.27,0.11,0,1,0,0)
+            spin_final = (0.5,0.27,0.11,0,1,-1,0)
+            up = (0.5,0.27,0.19,0,1,-1,0)
             back = (0.48,0.05,0.19,0,1,0,0)
             if action[1] % 4 == 0:
                 target_list = [ready,grip]
-                unique_actions = {2:["grip"]}
+                unique_actions = {target_list.index(grip)+1:["grip"]}
                 speed = [0.7] * len(target_list)
             elif action[1] % 4 == 1:
-                target_list = [spin_s2l]
+                target_list = [middle_spin]
                 unique_actions = {}
                 speed = [0.7] * len(target_list)
+                speed[-1] = 0
             elif action[1] % 4 == 2:
-                # speed = 0.3
-                target_list = [up,back,ready,grip,spin_l2s]
-                unique_actions = {0:["open"],4:["grip"]}
+                target_list = [spin]
+                unique_actions = {}
                 speed = [0.7] * len(target_list)
                 speed[-1] = 0
             elif action[1] % 4 == 3:
-                # speed = 0.3
-                target_list = [up,back,ready,grip,spin_s2l,up,back,retract]
-                unique_actions = {0:["open"],4:["grip"],5:["wait5","open"]} # TODO:wait?
-                speed = [0.7] * len(target_list)
-                speed[-4] = 0
+                target_list = [spin_final,up,back,retract]
+                unique_actions = {target_list.index(spin_final)+1:["wait10","open"]}
+                speed = [0.7] * len(target_list)  
+                speed[-2] = 0
                 speed[-1] = 0
         
         waypoints_list = []
