@@ -325,24 +325,35 @@ def intention_sender(args):
                                         intention_queue.append(intention)
                                     else:
                                         intention_queue = []
+                                        old_intention = "no_action"
                             else:
                                 if intention != old_intention and intention == intention_queue[-1] and intention != "no_action":
                                     if intention == "get_connectors":
                                         if args.outer_restrict == 'working_area':
-                                            if righthand_xpose < -22: send_intention_to_ros(intention)
+                                            if righthand_xpose < -22: 
+                                                send_intention_to_ros(intention)
+                                                old_intention = intention
                                         else:
                                             send_intention_to_ros(intention)
+                                            old_intention = intention
                                     elif intention == "get_screws":
                                         if args.outer_restrict == 'working_area':
-                                            if righthand_xpose > 10: send_intention_to_ros(intention)
+                                            if righthand_xpose > 10: 
+                                                send_intention_to_ros(intention)
+                                                old_intention = intention
                                         else:
                                             send_intention_to_ros(intention)
+                                            old_intention = intention
                                     elif intention == "get_wheels":
                                         if args.outer_restrict == 'working_area':
-                                            if righthand_xpose > 10: send_intention_to_ros(intention)
+                                            if righthand_xpose > 10: 
+                                                send_intention_to_ros(intention)
+                                                old_intention = intention
                                         else:
                                             send_intention_to_ros(intention)
-                                old_intention = intention
+                                            old_intention = intention
+                                else:
+                                    old_intention = intention
                                 intention_queue = []
 
 
