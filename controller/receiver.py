@@ -346,8 +346,10 @@ class Receiver:
             get = (-0.28-x_interval*col,0.28-y_interval*row,0.2,0,-0.7,-0.7,0)
             grip = (-0.28-x_interval*col,0.28-y_interval*row,-0.045,0,-0.7,-0.7,0)
             deliver = (0.3,0.3,0.25,0,-0.7,-0.6,-0.2) # TODO: move with hand
-            target_list = [retract,ready,base,get,grip,get,base,ready,deliver,ready,retract]
-            unique_actions = {5:["grip"],9:["force_triggered"]}
+            # target_list = [retract,ready,base,get,grip,get,base,ready,deliver,ready,retract]
+            # unique_actions = {5:["grip"],9:["force_triggered"]}
+            target_list = [ready,base,get,grip,get,base,ready,deliver,ready]
+            unique_actions = {target_list.index(grip)+1:["grip"],target_list.index(deliver)+1:["force_triggered"]}
             speed = [0.7] * len(target_list)
             speed[-1] = 0
 
@@ -362,8 +364,10 @@ class Receiver:
             grip = (-0.28-x_interval*col,-0.04,0.15,0,-0.7,-0.7,0)
             base_long = (-0.18,-0.04,0.3,0,-0.7,-0.7,0)
             deliver = (0.3,0.3,0.35,0,-0.7,-0.6,-0.2) # TODO: move with hand
-            target_list = [retract,ready,base,get,grip,get,base_long,base,ready,deliver,ready,retract]
+            # target_list = [retract,ready,base,get,grip,get,base_long,base,ready,deliver,ready,retract]
             unique_actions = {5:["grip"],10:["force_triggered"]}
+            target_list = [ready,base,get,grip,get,base_long,base,ready,deliver,ready]
+            unique_actions = {target_list.index(grip)+1:["grip"],target_list.index(deliver)+1:["force_triggered"]}
             speed = [0.7] * len(target_list)
             speed[-1] = 0
 
