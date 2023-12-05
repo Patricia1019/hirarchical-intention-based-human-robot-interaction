@@ -112,7 +112,7 @@ class MyDataset(Dataset):
                         weights[intention_label] += 1
                     
                 pos_data_num = len(task_data) // len(self.intention_list)
-                array = []
+                array = [] 
                 array.extend(np.arange(0,points['start'][0]-self.seq_len-self.pred_len))
                 for i in range(1,len(points['end'])-1):
                     end_index = points['end'][i]
