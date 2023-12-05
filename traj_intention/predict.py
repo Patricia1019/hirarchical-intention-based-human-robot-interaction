@@ -48,7 +48,7 @@ class IntentionPredictor:
         if ckpt_path:
             checkpoint = torch.load(ckpt_path)
         else: # default
-            checkpoint = torch.load(f'{FILE_DIR}/checkpoints/seq{args.seq_len}_pred{args.pred_len}_epoch{args.epochs}_whole.pth')
+            checkpoint = torch.load(f'{FILE_DIR}/checkpoints/seq{args.seq_len}_pred{args.pred_len}_epoch{args.epochs}_whole_mask_peiqi_abu(old).pth')
         self.model.load_state_dict(checkpoint)
         self.model.eval()
 

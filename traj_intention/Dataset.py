@@ -9,14 +9,14 @@ import pdb
 
 INTENTION_LIST = {"no_action":0, "get_connectors":1,"get_screws":2,"get_wheels":3}
 class MyDataset(Dataset):
-    def __init__(self, json_file, root_dir, args,type="train",transform=None,test_whole=True):
+    def __init__(self, json_file, root_dir, args,dataset_type="train",transform=None,test_whole=True):
         self.json_file = json_file
         self.transform = transform
         self.root_dir = root_dir
         self.seq_len = args.seq_len
         self.pred_len = args.pred_len
         self.channels = args.channels
-        self.type = type
+        self.type = dataset_type
         self.test_whole = test_whole
         self.half_body = args.half_body
         self.intention_list = INTENTION_LIST
@@ -36,7 +36,9 @@ class MyDataset(Dataset):
                     continue
                 points = intention_tasks[task]
                 npy_file = np.load(f'{self.root_dir}/{task[:-3]}/{task}.npy')
-                npy_file = np.concatenate((npy_file[:,11:25,:],npy_file[:,0:1,:]),axis=1)
+                # pdb.set_trace()
+                if self.type == "test_self":
+                    npy_file = np.concatenate((npy_file[:,11:25,:],npy_file[:,0:1,:]),axis=1)
                 if self.half_body:
                     npy_file = np.concatenate((npy_file[:,1::2,:],npy_file[:,0:1,:],npy_file[:,-1:,:],npy_file[:,-3:-2,:]),axis=1)
                 assert len(points['start']) == len(points['end']), f"The number of start points and end points doesn't match in {task}!"
@@ -67,7 +69,7 @@ class MyDataset(Dataset):
                     negOutputs = torch.from_numpy(npy_file[j+self.seq_len:j+self.seq_len+self.pred_len].reshape(self.pred_len,self.channels)).float()
                     task_data.append((negInputs,negOutputs,torch.tensor(0)))
                     weights[0] += 1 
-
+                    # pdb.set_trace()
 
                 data.extend(task_data)
         

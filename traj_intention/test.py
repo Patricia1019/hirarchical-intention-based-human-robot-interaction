@@ -41,7 +41,9 @@ if __name__ == '__main__':
                         help='whether to extract only half body keypoints') 
     parser.add_argument('--test_whole', action="store_true",
                         help='whether to test on build_cars tasks') 
-    parser.add_argument('--restrict', type=str,default="working_area",
+    parser.add_argument('--test_type',type=str,default="test_self",
+                        help='two options:[test_self,test_others]')
+    parser.add_argument('--restrict', type=str,default="ood",
                         help='four options:[no,working_area,ood,all]') 
     parser.add_argument('--epochs', type=int, default=40) 
     args = parser.parse_args()
@@ -52,13 +54,13 @@ if __name__ == '__main__':
     # if not args.test_whole:
     #     checkpoint = torch.load(f'{FILE_DIR}/checkpoints/seq{args.seq_len}_pred{args.pred_len}_epoch{args.epochs}_not_whole.pth')
     # else:
-    checkpoint = torch.load(f'{FILE_DIR}/checkpoints/seq{args.seq_len}_pred{args.pred_len}_epoch{args.epochs}_whole.pth')
+    checkpoint = torch.load(f'{FILE_DIR}/checkpoints/seq{args.seq_len}_pred{args.pred_len}_epoch{args.epochs}_whole_mask_peiqi_abu(old).pth')
     model.load_state_dict(checkpoint)
     model.eval()
 
-    dataset = MyDataset(JSON_FILE,ROOT_DIR,args,type="test",test_whole=args.test_whole)
+    dataset = MyDataset(JSON_FILE,ROOT_DIR,args,dataset_type=args.test_type,test_whole=args.test_whole)
     dataloader = DataLoader(dataset, batch_size=1, shuffle=True)
-
+    # pdb.set_trace()
     count = 0
     losses = 0
     error = [0]*args.class_num
@@ -73,28 +75,31 @@ if __name__ == '__main__':
         count += gap
         if gap == 1:
             error[labels[0]] += 1
-
+        # pdb.set_trace()
         intention_list.append(pred_intention[0].item())
         labels_list.append(labels[0].item())
 
     intention_list = np.array(intention_list)
     labels_list = np.array(labels_list)
+    # confusion_matrix = metrics.confusion_matrix(intention_list,labels_list)
+    # confusion_matrix_norm = metrics.confusion_matrix(intention_list,labels_list,normalize='true')
     confusion_matrix = metrics.confusion_matrix(labels_list,intention_list)
     confusion_matrix_norm = metrics.confusion_matrix(labels_list,intention_list,normalize='true')
+    # pdb.set_trace()
     # confusion_matrix_norm = confusion_matrix/confusion_matrix.sum(1)
     cm_display_norm = metrics.ConfusionMatrixDisplay(confusion_matrix = confusion_matrix_norm, display_labels = ["no_action","connectors","screws","wheels"])
     cm_display_norm.plot()
     if args.test_whole:
-        plt.savefig(f'{FILE_DIR}/results/cm_norm_test_whole_{args.restrict}_restrict.jpg', bbox_inches = 'tight')
+        plt.savefig(f'{FILE_DIR}/results/cm_norm_test_whole_{args.restrict}_restrict_{args.test_type}.jpg', bbox_inches = 'tight')
     else:
-        plt.savefig(f'{FILE_DIR}/results/cm_norm_not_test_whole_{args.restrict}_restrict.jpg', bbox_inches = 'tight')
+        plt.savefig(f'{FILE_DIR}/results/cm_norm_not_test_whole_{args.restrict}_restrict_{args.test_type}.jpg', bbox_inches = 'tight')
     plt.close()
     cm_display = metrics.ConfusionMatrixDisplay(confusion_matrix = confusion_matrix, display_labels = ["no_action","connectors","screws","wheels"])
     cm_display.plot()
     if args.test_whole:
-        plt.savefig(f'{FILE_DIR}/results/cm_test_whole_{args.restrict}_restrict.jpg', bbox_inches = 'tight')
+        plt.savefig(f'{FILE_DIR}/results/cm_test_whole_{args.restrict}_restrict_{args.test_type}.jpg', bbox_inches = 'tight')
     else:
-        plt.savefig(f'{FILE_DIR}/results/cm_not_test_whole_{args.restrict}_restrict.jpg', bbox_inches = 'tight')
+        plt.savefig(f'{FILE_DIR}/results/cm_not_test_whole_{args.restrict}_restrict_{args.test_type}.jpg', bbox_inches = 'tight')
     count = count / len(dataset)
     print(f"length of dataset:{len(dataset)}")
     print("accuracy: {:.2f}%".format((1 - count) * 100))
