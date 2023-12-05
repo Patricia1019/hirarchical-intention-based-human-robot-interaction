@@ -41,24 +41,26 @@ if __name__ == '__main__':
                         help='whether to extract only half body keypoints') 
     parser.add_argument('--test_whole', action="store_true",
                         help='whether to test on build_cars tasks') 
+    parser.add_argument('--restrict', type=str,default="ood",
+                        help='four options:[no,working_area,ood,all]')
     parser.add_argument('--test_type',type=str,default="test_self",
                         help='two options:[test_self,test_others]')
-    parser.add_argument('--restrict', type=str,default="ood",
-                        help='four options:[no,working_area,ood,all]') 
+    parser.add_argument('--input_type', type=str,default="pkl",
+                        help='two options:[pkl,npy]') 
     parser.add_argument('--epochs', type=int, default=40) 
     args = parser.parse_args()
 
     if args.half_body:
         args.channels = 10*3
-    model = Model(args)
+    # model = Model(args)
     # if not args.test_whole:
     #     checkpoint = torch.load(f'{FILE_DIR}/checkpoints/seq{args.seq_len}_pred{args.pred_len}_epoch{args.epochs}_not_whole.pth')
     # else:
-    checkpoint = torch.load(f'{FILE_DIR}/checkpoints/seq{args.seq_len}_pred{args.pred_len}_epoch{args.epochs}_whole_mask_peiqi_abu(old).pth')
-    model.load_state_dict(checkpoint)
-    model.eval()
-
-    dataset = MyDataset(JSON_FILE,ROOT_DIR,args,dataset_type=args.test_type,test_whole=args.test_whole)
+    # checkpoint = torch.load(f'{FILE_DIR}/checkpoints/seq{args.seq_len}_pred{args.pred_len}_epoch{args.epochs}_whole_mask_peiqi_abu(old).pth')
+    # model.load_state_dict(checkpoint)
+    # model.eval()
+    ckpt_path = f'{FILE_DIR}/checkpoints/seq{args.seq_len}_pred{args.pred_len}_epoch{args.epochs}_whole_{args.input_type}.pth'
+    dataset = MyDataset(JSON_FILE,ROOT_DIR,args,dataset_type=args.test_type,test_whole=args.test_whole,input_type=args.input_type)
     dataloader = DataLoader(dataset, batch_size=1, shuffle=True)
     # pdb.set_trace()
     count = 0
@@ -66,7 +68,7 @@ if __name__ == '__main__':
     error = [0]*args.class_num
     intention_list = []
     labels_list = []
-    predictor = IntentionPredictor()
+    predictor = IntentionPredictor(ckpt_path=ckpt_path)
     for batch in tqdm(dataloader):
         inputs,target_traj,labels = batch # inputs.shape:[batch_size,seq_len,15*3]
         # pred_traj,pred_intention = model(inputs)

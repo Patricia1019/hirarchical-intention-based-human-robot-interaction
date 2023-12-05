@@ -278,7 +278,8 @@ def intention_sender(args):
                         righthand = landmarks[16]
                         rightelbow = landmarks[14]
                         rightshoulder = landmarks[12]
-                        upperbody = np.concatenate((landmarks[11:25,:],landmarks[0:1,:]),axis=0)
+                        # upperbody = np.concatenate((landmarks[11:25,:],landmarks[0:1,:]),axis=0)
+                        upperbody = body.landmarks
                         if len(traj_queue) < frame_size:
                             traj_queue.append(upperbody)
                         else:
