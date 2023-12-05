@@ -32,8 +32,8 @@ SKELETON_LIST = {
 
 class Args:
     def __init__(self,**kwargs):
-        self.default = {"seq_len":5,"pred_len":5,"class_num":4,"individual":False,"channels":15*3,"half_body":False,"epochs":40}
-        for key in ('seq_len','pred_len', 'class_num', 'individual', 'channels','half_body','epochs'):
+        self.default = {"seq_len":5,"pred_len":5,"class_num":4,"individual":False,"channels":15*3,"half_body":False,"epochs":40,"input_type":"pkl"}
+        for key in ('seq_len','pred_len', 'class_num', 'individual', 'channels','half_body','epochs','input_type'):
             if key in kwargs and\
                 kwargs[key]:
                     setattr(self, key, kwargs[key])
@@ -48,7 +48,7 @@ class IntentionPredictor:
         if ckpt_path:
             checkpoint = torch.load(ckpt_path)
         else: # default
-            checkpoint = torch.load(f'{FILE_DIR}/checkpoints/seq{args.seq_len}_pred{args.pred_len}_epoch{args.epochs}_whole_mask_peiqi_abu(old).pth')
+            checkpoint = torch.load(f'{FILE_DIR}/checkpoints/seq{args.seq_len}_pred{args.pred_len}_epoch{args.epochs}_whole_{args.input_type}.pth')
         self.model.load_state_dict(checkpoint)
         self.model.eval()
 
