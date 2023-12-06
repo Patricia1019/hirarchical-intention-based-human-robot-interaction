@@ -14,7 +14,7 @@ import matplotlib.pyplot as plt
 from sklearn import metrics
 import pdb
 
-from DLinear import Model
+from DLinear import Model_FinalIntention,Model_FinalTraj
 from Dataset import MyDataset, INTENTION_LIST
 from predict import IntentionPredictor
 
@@ -47,6 +47,8 @@ if __name__ == '__main__':
                         help='two options:[test_self,test_others]')
     parser.add_argument('--input_type', type=str,default="pkl",
                         help='two options:[pkl,npy]') 
+    parser.add_argument('--model_type',type=str,default="final_traj",
+                        help='two options:[final_intention,final_traj]')
     parser.add_argument('--epochs', type=int, default=40) 
     args = parser.parse_args()
 
@@ -68,7 +70,7 @@ if __name__ == '__main__':
     error = [0]*args.class_num
     intention_list = []
     labels_list = []
-    predictor = IntentionPredictor(ckpt_path=ckpt_path)
+    predictor = IntentionPredictor(model_type=args.model_type)
     for batch in tqdm(dataloader):
         inputs,target_traj,labels = batch # inputs.shape:[batch_size,seq_len,15*3]
         # pred_traj,pred_intention = model(inputs)
@@ -92,16 +94,16 @@ if __name__ == '__main__':
     cm_display_norm = metrics.ConfusionMatrixDisplay(confusion_matrix = confusion_matrix_norm, display_labels = ["no_action","connectors","screws","wheels"])
     cm_display_norm.plot()
     if args.test_whole:
-        plt.savefig(f'{FILE_DIR}/results/cm_norm_test_whole_{args.restrict}_restrict_{args.test_type}.jpg', bbox_inches = 'tight')
+        plt.savefig(f'{FILE_DIR}/results/cm_norm_test_whole_{args.restrict}_restrict_{args.test_type}_{args.model_type}.jpg', bbox_inches = 'tight')
     else:
-        plt.savefig(f'{FILE_DIR}/results/cm_norm_not_test_whole_{args.restrict}_restrict_{args.test_type}.jpg', bbox_inches = 'tight')
+        plt.savefig(f'{FILE_DIR}/results/cm_norm_not_test_whole_{args.restrict}_restrict_{args.test_type}_{args.model_type}.jpg', bbox_inches = 'tight')
     plt.close()
     cm_display = metrics.ConfusionMatrixDisplay(confusion_matrix = confusion_matrix, display_labels = ["no_action","connectors","screws","wheels"])
     cm_display.plot()
     if args.test_whole:
-        plt.savefig(f'{FILE_DIR}/results/cm_test_whole_{args.restrict}_restrict_{args.test_type}.jpg', bbox_inches = 'tight')
+        plt.savefig(f'{FILE_DIR}/results/cm_test_whole_{args.restrict}_restrict_{args.test_type}_{args.model_type}.jpg', bbox_inches = 'tight')
     else:
-        plt.savefig(f'{FILE_DIR}/results/cm_not_test_whole_{args.restrict}_restrict_{args.test_type}.jpg', bbox_inches = 'tight')
+        plt.savefig(f'{FILE_DIR}/results/cm_not_test_whole_{args.restrict}_restrict_{args.test_type}_{args.model_type}.jpg', bbox_inches = 'tight')
     count = count / len(dataset)
     print(f"length of dataset:{len(dataset)}")
     print("accuracy: {:.2f}%".format((1 - count) * 100))

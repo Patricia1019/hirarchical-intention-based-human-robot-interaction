@@ -9,7 +9,7 @@ from torch.nn.functional import softmax
 from torch.distributions import Categorical
 import pdb
 
-from DLinear import Model
+from DLinear import Model_FinalIntention,Model_FinalTraj
 from Dataset import INTENTION_LIST
 
 SKELETON_LIST = {
@@ -42,13 +42,16 @@ class Args:
         
 
 class IntentionPredictor:
-    def __init__(self,ckpt_path=None,**kwargs): 
-        args = Args()
-        self.model = Model(args)
+    def __init__(self,ckpt_path=None,model_type="final_intention",**kwargs): 
+        args = Args(**kwargs)
+        if model_type == "final_intention":
+            self.model = Model_FinalIntention(args)
+        elif model_type == "final_traj":
+            self.model = Model_FinalTraj(args)
         if ckpt_path:
             checkpoint = torch.load(ckpt_path)
         else: # default
-            checkpoint = torch.load(f'{FILE_DIR}/checkpoints/seq{args.seq_len}_pred{args.pred_len}_epoch{args.epochs}_whole_{args.input_type}.pth')
+            checkpoint = torch.load(f'{FILE_DIR}/checkpoints/seq{args.seq_len}_pred{args.pred_len}_epoch{args.epochs}_whole_{args.input_type}_{model_type}.pth')
         self.model.load_state_dict(checkpoint)
         self.model.eval()
 

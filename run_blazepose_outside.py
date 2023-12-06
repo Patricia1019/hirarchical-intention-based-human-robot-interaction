@@ -188,7 +188,7 @@ def intention_sender(args):
     frame_count = 0
     traj_queue = []
     intention_queue = []
-    Predictor = IntentionPredictor()
+    Predictor = IntentionPredictor(model_type=args.model_type)
     old_upperbody = 0
     old_intention = None
     if os.path.exists(f'{ROOT_DIR}/images{task[-3:]}'):
@@ -415,6 +415,8 @@ if __name__ == '__main__':
                         help='four options:[no,working_area,ood,all]') 
     parser.add_argument('--outer_restrict',type=str,default="working_area",
                         help='outer restriction')
+    parser.add_argument('--model_type',type=str,default="final_traj",
+                        help='two options:[final_intention,final_traj]')
     args = parser.parse_args()
 
     intention_sender(args)
