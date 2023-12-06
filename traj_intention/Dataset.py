@@ -56,65 +56,46 @@ class MyDataset(Dataset):
         data = []
         weights = [0]*len(self.intention_list)
         for intention in data_cut_points.keys():
-            intention_tasks = data_cut_points[intention]
-            intention_label = self.intention_list[intention]
-            for task in intention_tasks.keys():
-                if not self.test_whole and 'build_cars' in task:
-                    continue
-                points = intention_tasks[task]
+            if intention != "no_action":
+                intention_tasks = data_cut_points[intention]
+                intention_label = self.intention_list[intention]
+                for task in intention_tasks.keys():
+                    if not self.test_whole and 'build_cars' in task:
+                        continue
+                    points = intention_tasks[task]
 
-                # process data
-                if self.input_type == "npy":
-                    npy_file = np.load(f'{self.root_dir}/{task[:-3]}/{task}.npy')
-                    # pdb.set_trace()
-                    if self.type == "test_self":
-                        npy_file = np.concatenate((npy_file[:,11:25,:],npy_file[:,0:1,:]),axis=1)
-                    if self.half_body:
-                        npy_file = np.concatenate((npy_file[:,1::2,:],npy_file[:,0:1,:],npy_file[:,-1:,:],npy_file[:,-3:-2,:]),axis=1)
-                elif self.input_type == "pkl":
-                    pic = open(f'{self.root_dir}/{task[:-3]}/{task}.pkl','rb')
-                    pkl_file = pickle.load(pic)
-                    poses = []
-                    for body in pkl_file:
-                        poses.append(body.landmarks)
-                    poses = np.array(poses)
-                    # poses_norm = 2*(poses-poses.min())/(poses.max()-poses.min())
-                    # poses_world = camera_to_world(poses_norm)
-                    # poses_world[:, :, 2] -= np.min(poses_world[:, :, 2])
-                    if self.type == "test_self":
-                        # npy_file = np.concatenate((poses_world[:,11:25,:],poses_world[:,0:1,:]),axis=1)
-                        npy_file = np.concatenate((poses[:,11:25,:],poses[:,0:1,:]),axis=1)
-                        npy_file = 2*(npy_file-npy_file.min())/(npy_file.max()-npy_file.min())
-                        npy_file = camera_to_world(npy_file)
-                        npy_file[:, :, 2] -= np.min(npy_file[:, :, 2]) 
-                    elif self.type == "test_others":
-                        # npy_file = poses_world
-                        # npy_file = np.concatenate((poses_world[:,11:25,:],poses_world[:,0:1,:]),axis=1)
-                        # npy_file = np.concatenate((poses[:,11:25,:],poses[:,0:1,:]),axis=1)
-                        npy_file = poses
-                        # npy_file = np.concatenate((poses[:,11:25,:],poses[:,0:1,:]),axis=1)
+                    # process data
+                    if self.input_type == "npy":
+                        npy_file = np.load(f'{self.root_dir}/{task[:-3]}/{task}.npy')
+                        # pdb.set_trace()
+                        if self.type == "test_self":
+                            npy_file = np.concatenate((npy_file[:,11:25,:],npy_file[:,0:1,:]),axis=1)
+                        if self.half_body:
+                            npy_file = np.concatenate((npy_file[:,1::2,:],npy_file[:,0:1,:],npy_file[:,-1:,:],npy_file[:,-3:-2,:]),axis=1)
+                    elif self.input_type == "pkl":
+                        pic = open(f'{self.root_dir}/{task[:-3]}/{task}.pkl','rb')
+                        pkl_file = pickle.load(pic)
+                        poses = []
+                        for body in pkl_file:
+                            poses.append(body.landmarks)
+                        npy_file = np.array(poses)
                         npy_file = 2*(npy_file-npy_file.min())/(npy_file.max()-npy_file.min())
                         npy_file = camera_to_world(npy_file)
                         npy_file[:, :, 2] -= np.min(npy_file[:, :, 2])
-                    elif self.type == "train":
-                        npy_file = np.concatenate((poses[:,11:25,:],poses[:,0:1,:]),axis=1)
-                        npy_file = 2*(npy_file-npy_file.min())/(npy_file.max()-npy_file.min())
-                        npy_file = camera_to_world(npy_file)
-                        npy_file[:, :, 2] -= np.min(npy_file[:, :, 2]) 
-                    # pdb.set_trace()
-                
-                assert len(points['start']) == len(points['end']), f"The number of start points and end points doesn't match in {task}!"
-                task_data = []
-                for i in range(len(points['end'])):
-                    end_index = points['end'][i] - 1
-                    start_index = points['start'][i] - 1
-                    for j in range(start_index,end_index-self.pred_len-self.seq_len+1):
-                        posInputs = torch.from_numpy(npy_file[j:j+self.seq_len].reshape(self.seq_len,self.channels)).float()
-                        posOutputs = torch.from_numpy(npy_file[j+self.seq_len:j+self.seq_len+self.pred_len].reshape(self.pred_len,self.channels)).float()
-                        task_data.append((posInputs,posOutputs,torch.tensor(intention_label)))
-                        weights[intention_label] += 1
+                        # pdb.set_trace()
+                    
+                    assert len(points['start']) == len(points['end']), f"The number of start points and end points doesn't match in {task}!"
+                    task_data = []
+                    for i in range(len(points['end'])):
+                        end_index = points['end'][i] - 1
+                        start_index = points['start'][i] - 1
+                        for j in range(start_index,end_index-self.pred_len-self.seq_len+1):
+                            posInputs = torch.from_numpy(npy_file[j:j+self.seq_len].reshape(self.seq_len,self.channels)).float()
+                            posOutputs = torch.from_numpy(npy_file[j+self.seq_len:j+self.seq_len+self.pred_len].reshape(self.pred_len,self.channels)).float()
+                            task_data.append((posInputs,posOutputs,torch.tensor(intention_label)))
+                            weights[intention_label] += 1
 
-                if intention != "no_action":
+                    # neg_data
                     pos_data_num = len(task_data) // len(self.intention_list) // 2
                     array = [] 
                     array.extend(np.arange(0,points['start'][0]-self.seq_len-self.pred_len))
@@ -134,7 +115,48 @@ class MyDataset(Dataset):
                         weights[0] += 1 
                         # pdb.set_trace()
 
-                data.extend(task_data)
+                    data.extend(task_data)
+            else:
+                intention_tasks = data_cut_points[intention]
+                intention_label = self.intention_list[intention]
+                for task in intention_tasks.keys():
+                    if not self.test_whole and 'build_cars' in task:
+                        continue
+                    points = intention_tasks[task]
+                    # process data
+                    if self.input_type == "npy":
+                        npy_file = np.load(f'{self.root_dir}/{task[:-3]}/{task}.npy')
+                        # pdb.set_trace()
+                        if self.type == "test_self":
+                            npy_file = np.concatenate((npy_file[:,11:25,:],npy_file[:,0:1,:]),axis=1)
+                        if self.half_body:
+                            npy_file = np.concatenate((npy_file[:,1::2,:],npy_file[:,0:1,:],npy_file[:,-1:,:],npy_file[:,-3:-2,:]),axis=1)
+                    elif self.input_type == "pkl":
+                        pic = open(f'{self.root_dir}/{task[:-3]}/{task}.pkl','rb')
+                        pkl_file = pickle.load(pic)
+                        poses = []
+                        for body in pkl_file:
+                            poses.append(body.landmarks)
+                        npy_file = np.array(poses)
+                        npy_file = 2*(npy_file-npy_file.min())/(npy_file.max()-npy_file.min())
+                        npy_file = camera_to_world(npy_file)
+                        npy_file[:, :, 2] -= np.min(npy_file[:, :, 2])
+                        # pdb.set_trace()
+                    
+                    assert len(points['start']) == len(points['end']), f"The number of start points and end points doesn't match in {task}!"
+                    task_data = []
+                    for i in range(len(points['end'])):
+                        end_index = points['end'][i] - 1
+                        start_index = points['start'][i] - 1
+                        array = [] 
+                        array.extend(np.arange(start_index,end_index-self.seq_len-self.pred_len+1))
+                        random_numbers = np.random.choice(array, len(array)//10, replace=False)
+                        for j in random_numbers:
+                            posInputs = torch.from_numpy(npy_file[j:j+self.seq_len].reshape(self.seq_len,self.channels)).float()
+                            posOutputs = torch.from_numpy(npy_file[j+self.seq_len:j+self.seq_len+self.pred_len].reshape(self.pred_len,self.channels)).float()
+                            task_data.append((posInputs,posOutputs,torch.tensor(intention_label)))
+                            weights[intention_label] += 1
+
         
         weights = torch.tensor([1/x for x in weights])
         return data,weights

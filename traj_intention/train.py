@@ -49,7 +49,7 @@ if __name__ == '__main__':
     batch_size = args.batch_size
     dataset = MyDataset(JSON_FILE,ROOT_DIR,args,dataset_type="train",test_whole=args.test_whole,input_type=args.input_type)
     dataloader = DataLoader(dataset, batch_size=batch_size,shuffle=True)
-
+    # pdb.set_trace()
     class_criterion = torch.nn.CrossEntropyLoss(weight=dataset.weights)
     traj_criterion = torch.nn.MSELoss()
     optimizer = torch.optim.SGD(net.parameters(), lr=0.001, momentum=0.9)
