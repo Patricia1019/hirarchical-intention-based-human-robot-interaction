@@ -62,6 +62,8 @@ class MyDataset(Dataset):
                 if not self.test_whole and 'build_cars' in task:
                     continue
                 points = intention_tasks[task]
+
+                # process data
                 if self.input_type == "npy":
                     npy_file = np.load(f'{self.root_dir}/{task[:-3]}/{task}.npy')
                     # pdb.set_trace()
@@ -100,6 +102,7 @@ class MyDataset(Dataset):
                         npy_file = camera_to_world(npy_file)
                         npy_file[:, :, 2] -= np.min(npy_file[:, :, 2]) 
                     # pdb.set_trace()
+                
                 assert len(points['start']) == len(points['end']), f"The number of start points and end points doesn't match in {task}!"
                 task_data = []
                 for i in range(len(points['end'])):
@@ -110,25 +113,26 @@ class MyDataset(Dataset):
                         posOutputs = torch.from_numpy(npy_file[j+self.seq_len:j+self.seq_len+self.pred_len].reshape(self.pred_len,self.channels)).float()
                         task_data.append((posInputs,posOutputs,torch.tensor(intention_label)))
                         weights[intention_label] += 1
-                    
-                pos_data_num = len(task_data) // len(self.intention_list)
-                array = [] 
-                array.extend(np.arange(0,points['start'][0]-self.seq_len-self.pred_len))
-                for i in range(1,len(points['end'])-1):
-                    end_index = points['end'][i]
-                    start_index = points['start'][i+1]
-                    array.extend(np.arange(end_index,start_index-self.seq_len-self.pred_len))
-                array.extend(np.arange(points['end'][-1],npy_file.shape[0]-self.seq_len-self.pred_len))
-                try:
-                    random_numbers = np.random.choice(array, pos_data_num, replace=False)
-                except:
-                    random_numbers = np.random.choice(array, pos_data_num, replace=True)
-                for j in random_numbers:
-                    negInputs = torch.from_numpy(npy_file[j:j+self.seq_len].reshape(self.seq_len,self.channels)).float()
-                    negOutputs = torch.from_numpy(npy_file[j+self.seq_len:j+self.seq_len+self.pred_len].reshape(self.pred_len,self.channels)).float()
-                    task_data.append((negInputs,negOutputs,torch.tensor(0)))
-                    weights[0] += 1 
-                    # pdb.set_trace()
+
+                if intention != "no_action":
+                    pos_data_num = len(task_data) // len(self.intention_list) // 2
+                    array = [] 
+                    array.extend(np.arange(0,points['start'][0]-self.seq_len-self.pred_len))
+                    for i in range(1,len(points['end'])-1):
+                        end_index = points['end'][i]
+                        start_index = points['start'][i+1]
+                        array.extend(np.arange(end_index,start_index-self.seq_len-self.pred_len))
+                    array.extend(np.arange(points['end'][-1],npy_file.shape[0]-self.seq_len-self.pred_len))
+                    try:
+                        random_numbers = np.random.choice(array, pos_data_num, replace=False)
+                    except:
+                        random_numbers = np.random.choice(array, pos_data_num, replace=True)
+                    for j in random_numbers:
+                        negInputs = torch.from_numpy(npy_file[j:j+self.seq_len].reshape(self.seq_len,self.channels)).float()
+                        negOutputs = torch.from_numpy(npy_file[j+self.seq_len:j+self.seq_len+self.pred_len].reshape(self.pred_len,self.channels)).float()
+                        task_data.append((negInputs,negOutputs,torch.tensor(0)))
+                        weights[0] += 1 
+                        # pdb.set_trace()
 
                 data.extend(task_data)
         
