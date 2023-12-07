@@ -102,14 +102,14 @@ if __name__ == '__main__':
     #     plt.savefig(f'{FILE_DIR}/results/cm_not_test_whole_{args.restrict}_restrict_{args.test_type}_{args.model_type}_nomask{args.no_mask}.jpg', bbox_inches = 'tight')
     count = count / len(dataset)
     print(f"length of dataset:{len(dataset)}")
-    print("accuracy: {:.2f}%".format((1 - count) * 100))
+    print(f"accuracy: {1 - count}")
     print(f"loss:{losses/len(dataset)}")
     print("dataset.weights")
     print(dataset.weights)
     print("error:")
     error = [error[i]*dataset.weights[i] for i in range(len(dataset.weights))]
     for key,value in INTENTION_LIST.items():
-        print(f"{key}: {error[value]}")
+        print(f"{key}: {1-error[value]}")
     # print(error)
             
 

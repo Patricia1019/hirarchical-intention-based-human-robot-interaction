@@ -15,6 +15,13 @@ This repo will consist of three parts:
 ## Human_traj link:
 https://drive.google.com/drive/folders/1YUqPF1TJxWBESdfgY9P-f4x1rXedP34I?usp=drive_link
 
+## Traj Intention Train&Test
+# Train
+python ./traj_intention/train.py --model_type final_intention
+
+# Test
+python ./traj_intention/test.py --restrict no --test_type test_others
+
 ## Noisome bug logs:
 1. I kept meeting with this error:
 ```QObject::moveToThread: Current thread (0x562521cd61c0) is not the object's thread (0x5625213cf9c0).

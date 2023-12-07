@@ -32,7 +32,7 @@ if __name__ == '__main__':
     parser.add_argument('--half_body', type=int, default=False, 
                         help='whether to extract only half body keypoints') 
     parser.add_argument('--batch_size', type=int, default=2) 
-    parser.add_argument('--test_whole', action="store_true",
+    parser.add_argument('--test_whole', default=True,
                         help='whether to test on build_cars tasks')
     parser.add_argument('--no_mask', action="store_true",
                         help='whether to remove mask')
