@@ -16,10 +16,10 @@ This repo will consist of three parts:
 https://drive.google.com/drive/folders/1YUqPF1TJxWBESdfgY9P-f4x1rXedP34I?usp=drive_link
 
 ## Traj Intention Train&Test
-# Train
+### Train
 python ./traj_intention/train.py --model_type final_intention
 
-# Test
+### Test
 python ./traj_intention/test.py --restrict no --test_type test_others
 
 ## Noisome bug logs:
