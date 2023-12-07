@@ -21,9 +21,6 @@ from predict import IntentionPredictor
 os.environ["DISPLAY"]=":0"
 if __name__ == '__main__':
     ROOT_DIR = f'{FILE_DIR}/../human_traj'
-    JSON_FILE = f'{ROOT_DIR}/cut_traj_new.json'
-    with open(JSON_FILE, 'r') as file:
-        data_cut_points = json.load(file)
     
     parser = argparse.ArgumentParser()
     parser.add_argument('--seq_len', default=5,
@@ -39,8 +36,10 @@ if __name__ == '__main__':
                         DLinear with --individual, use this hyperparameter as the number of channels') 
     parser.add_argument('--half_body', type=int, default=False, 
                         help='whether to extract only half body keypoints') 
-    parser.add_argument('--test_whole', action="store_true",
-                        help='whether to test on build_cars tasks') 
+    parser.add_argument('--test_whole', default=True,
+                        help='whether to test on build_cars tasks')
+    parser.add_argument('--no_mask', action="store_true",
+                        help='whether to remove mask')
     parser.add_argument('--restrict', type=str,default="ood",
                         help='four options:[no,working_area,ood,all]')
     parser.add_argument('--test_type',type=str,default="test_self",
@@ -54,14 +53,13 @@ if __name__ == '__main__':
 
     if args.half_body:
         args.channels = 10*3
-    # model = Model(args)
-    # if not args.test_whole:
-    #     checkpoint = torch.load(f'{FILE_DIR}/checkpoints/seq{args.seq_len}_pred{args.pred_len}_epoch{args.epochs}_not_whole.pth')
-    # else:
-    # checkpoint = torch.load(f'{FILE_DIR}/checkpoints/seq{args.seq_len}_pred{args.pred_len}_epoch{args.epochs}_whole_mask_peiqi_abu(old).pth')
-    # model.load_state_dict(checkpoint)
-    # model.eval()
-    ckpt_path = f'{FILE_DIR}/checkpoints/seq{args.seq_len}_pred{args.pred_len}_epoch{args.epochs}_whole_{args.input_type}.pth'
+    
+    if args.no_mask:
+        JSON_FILE = f'{ROOT_DIR}/cut_traj_nomask.json'
+    else:
+        JSON_FILE = f'{ROOT_DIR}/cut_traj_mask.json'
+
+    ckpt_path = f'{FILE_DIR}/checkpoints/seq{args.seq_len}_pred{args.pred_len}_epoch{args.epochs}_whole_{args.input_type}_{args.model_type}_nomask{args.no_mask}.pth'
     dataset = MyDataset(JSON_FILE,ROOT_DIR,args,dataset_type=args.test_type,test_whole=args.test_whole,input_type=args.input_type)
     dataloader = DataLoader(dataset, batch_size=1, shuffle=True)
     # pdb.set_trace()
@@ -70,7 +68,7 @@ if __name__ == '__main__':
     error = [0]*args.class_num
     intention_list = []
     labels_list = []
-    predictor = IntentionPredictor(model_type=args.model_type)
+    predictor = IntentionPredictor(model_type=args.model_type,no_mask=args.no_mask)
     for batch in tqdm(dataloader):
         inputs,target_traj,labels = batch # inputs.shape:[batch_size,seq_len,15*3]
         # pred_traj,pred_intention = model(inputs)
@@ -85,8 +83,6 @@ if __name__ == '__main__':
 
     intention_list = np.array(intention_list)
     labels_list = np.array(labels_list)
-    # confusion_matrix = metrics.confusion_matrix(intention_list,labels_list)
-    # confusion_matrix_norm = metrics.confusion_matrix(intention_list,labels_list,normalize='true')
     confusion_matrix = metrics.confusion_matrix(labels_list,intention_list)
     confusion_matrix_norm = metrics.confusion_matrix(labels_list,intention_list,normalize='true')
     # pdb.set_trace()
@@ -94,16 +90,16 @@ if __name__ == '__main__':
     cm_display_norm = metrics.ConfusionMatrixDisplay(confusion_matrix = confusion_matrix_norm, display_labels = ["no_action","connectors","screws","wheels"])
     cm_display_norm.plot()
     if args.test_whole:
-        plt.savefig(f'{FILE_DIR}/results/cm_norm_test_whole_{args.restrict}_restrict_{args.test_type}_{args.model_type}.jpg', bbox_inches = 'tight')
+        plt.savefig(f'{FILE_DIR}/results/cm_norm_test_whole_{args.restrict}_restrict_{args.test_type}_{args.model_type}_nomask{args.no_mask}.jpg', bbox_inches = 'tight')
     else:
-        plt.savefig(f'{FILE_DIR}/results/cm_norm_not_test_whole_{args.restrict}_restrict_{args.test_type}_{args.model_type}.jpg', bbox_inches = 'tight')
+        plt.savefig(f'{FILE_DIR}/results/cm_norm_not_test_whole_{args.restrict}_restrict_{args.test_type}_{args.model_type}_nomask{args.no_mask}.jpg', bbox_inches = 'tight')
     plt.close()
     cm_display = metrics.ConfusionMatrixDisplay(confusion_matrix = confusion_matrix, display_labels = ["no_action","connectors","screws","wheels"])
     cm_display.plot()
-    if args.test_whole:
-        plt.savefig(f'{FILE_DIR}/results/cm_test_whole_{args.restrict}_restrict_{args.test_type}_{args.model_type}.jpg', bbox_inches = 'tight')
-    else:
-        plt.savefig(f'{FILE_DIR}/results/cm_not_test_whole_{args.restrict}_restrict_{args.test_type}_{args.model_type}.jpg', bbox_inches = 'tight')
+    # if args.test_whole:
+    #     plt.savefig(f'{FILE_DIR}/results/cm_test_whole_{args.restrict}_restrict_{args.test_type}_{args.model_type}_nomask{args.no_mask}.jpg', bbox_inches = 'tight')
+    # else:
+    #     plt.savefig(f'{FILE_DIR}/results/cm_not_test_whole_{args.restrict}_restrict_{args.test_type}_{args.model_type}_nomask{args.no_mask}.jpg', bbox_inches = 'tight')
     count = count / len(dataset)
     print(f"length of dataset:{len(dataset)}")
     print("accuracy: {:.2f}%".format((1 - count) * 100))

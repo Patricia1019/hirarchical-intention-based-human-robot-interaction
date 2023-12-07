@@ -42,7 +42,7 @@ class Args:
         
 
 class IntentionPredictor:
-    def __init__(self,ckpt_path=None,model_type="final_intention",**kwargs): 
+    def __init__(self,ckpt_path=None,model_type="final_intention",no_mask=False,**kwargs): 
         args = Args(**kwargs)
         if model_type == "final_intention":
             self.model = Model_FinalIntention(args)
@@ -51,7 +51,7 @@ class IntentionPredictor:
         if ckpt_path:
             checkpoint = torch.load(ckpt_path)
         else: # default
-            checkpoint = torch.load(f'{FILE_DIR}/checkpoints/seq{args.seq_len}_pred{args.pred_len}_epoch{args.epochs}_whole_{args.input_type}_{model_type}.pth')
+            checkpoint = torch.load(f'{FILE_DIR}/checkpoints/seq{args.seq_len}_pred{args.pred_len}_epoch{args.epochs}_whole_{args.input_type}_{model_type}_nomask{no_mask}.pth')
         self.model.load_state_dict(checkpoint)
         self.model.eval()
 

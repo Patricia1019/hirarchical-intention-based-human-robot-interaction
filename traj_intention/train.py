@@ -16,9 +16,6 @@ from Dataset import MyDataset
 
 if __name__ == '__main__':
     ROOT_DIR = f'{FILE_DIR}/../human_traj'
-    JSON_FILE = f'{ROOT_DIR}/cut_traj_new.json'
-    with open(JSON_FILE, 'r') as file:
-        data_cut_points = json.load(file)
     
     parser = argparse.ArgumentParser()
     parser.add_argument('--seq_len', default=5,
@@ -37,6 +34,8 @@ if __name__ == '__main__':
     parser.add_argument('--batch_size', type=int, default=2) 
     parser.add_argument('--test_whole', action="store_true",
                         help='whether to test on build_cars tasks')
+    parser.add_argument('--no_mask', action="store_true",
+                        help='whether to remove mask')
     parser.add_argument('--model_type',type=str,default="final_traj",
                         help='two options:[final_intention,final_traj]')
     parser.add_argument('--input_type', type=str,default="pkl",
@@ -50,6 +49,11 @@ if __name__ == '__main__':
         net = Model_FinalIntention(args)
     elif args.model_type == "final_traj":
         net = Model_FinalTraj(args)
+
+    if args.no_mask:
+        JSON_FILE = f'{ROOT_DIR}/cut_traj_nomask.json'
+    else:
+        JSON_FILE = f'{ROOT_DIR}/cut_traj_mask.json'
 
     batch_size = args.batch_size
     dataset = MyDataset(JSON_FILE,ROOT_DIR,args,dataset_type="train",test_whole=args.test_whole,input_type=args.input_type)
@@ -76,7 +80,7 @@ if __name__ == '__main__':
                 
         print(f'Epoch {epoch + 1}, Loss: {running_loss / count}')
     # if args.test_whole:
-    torch.save(net.state_dict(), f'{FILE_DIR}/checkpoints/seq{args.seq_len}_pred{args.pred_len}_epoch{epochs}_whole_{args.input_type}_{args.model_type}.pth')
+    torch.save(net.state_dict(), f'{FILE_DIR}/checkpoints/seq{args.seq_len}_pred{args.pred_len}_epoch{epochs}_whole_{args.input_type}_{args.model_type}_nomask{args.no_mask}.pth')
     # else:
     #     torch.save(net.state_dict(), f'{FILE_DIR}/checkpoints/seq{args.seq_len}_pred{args.pred_len}_epoch{epochs}_not_whole_{args.input_type}.pth')
     
