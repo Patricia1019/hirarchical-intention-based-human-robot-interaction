@@ -40,7 +40,9 @@ if __name__ == '__main__':
                         help='whether to test on build_cars tasks')
     parser.add_argument('--no_mask', action="store_true",
                         help='whether to remove mask')
-    parser.add_argument('--restrict', type=str,default="ood",
+    parser.add_argument('--filter_type', type=str,default=None,
+                        help='Trajectory filter type, must be used together with no_mask,four options:["median","wiener","kalman","ema"]')
+    parser.add_argument('--restrict', type=str,default="no",
                         help='four options:[no,working_area,ood,all]')
     parser.add_argument('--test_type',type=str,default="test_self",
                         help='two options:[test_self,test_others]')
@@ -48,6 +50,8 @@ if __name__ == '__main__':
                         help='two options:[pkl,npy]') 
     parser.add_argument('--model_type',type=str,default="final_traj",
                         help='two options:[final_intention,final_traj]')
+    parser.add_argument('--save_fig',action="store_true",
+                        help='save test results as figure')
     parser.add_argument('--epochs', type=int, default=40) 
     args = parser.parse_args()
 
@@ -60,15 +64,16 @@ if __name__ == '__main__':
         JSON_FILE = f'{ROOT_DIR}/cut_traj_mask.json'
 
     ckpt_path = f'{FILE_DIR}/checkpoints/seq{args.seq_len}_pred{args.pred_len}_epoch{args.epochs}_whole_{args.input_type}_{args.model_type}_nomask{args.no_mask}.pth'
-    dataset = MyDataset(JSON_FILE,ROOT_DIR,args,dataset_type=args.test_type,test_whole=args.test_whole,input_type=args.input_type)
+    dataset = MyDataset(JSON_FILE,ROOT_DIR,args,dataset_type=args.test_type)
     dataloader = DataLoader(dataset, batch_size=1, shuffle=True)
+    print("data loaded!")
     # pdb.set_trace()
     count = 0
     losses = 0
     error = [0]*args.class_num
     intention_list = []
     labels_list = []
-    predictor = IntentionPredictor(model_type=args.model_type,no_mask=args.no_mask)
+    predictor = IntentionPredictor(model_type=args.model_type,no_mask=args.no_mask,filter_type=args.filter_type)
     for batch in tqdm(dataloader):
         inputs,target_traj,labels = batch # inputs.shape:[batch_size,seq_len,15*3]
         # pred_traj,pred_intention = model(inputs)
@@ -89,17 +94,19 @@ if __name__ == '__main__':
     # confusion_matrix_norm = confusion_matrix/confusion_matrix.sum(1)
     cm_display_norm = metrics.ConfusionMatrixDisplay(confusion_matrix = confusion_matrix_norm, display_labels = ["no_action","connectors","screws","wheels"])
     cm_display_norm.plot()
-    if args.test_whole:
-        plt.savefig(f'{FILE_DIR}/results/cm_norm_test_whole_{args.restrict}_restrict_{args.test_type}_{args.model_type}_nomask{args.no_mask}.jpg', bbox_inches = 'tight')
-    else:
-        plt.savefig(f'{FILE_DIR}/results/cm_norm_not_test_whole_{args.restrict}_restrict_{args.test_type}_{args.model_type}_nomask{args.no_mask}.jpg', bbox_inches = 'tight')
+    if args.save_fig:
+        if args.test_whole:
+            plt.savefig(f'{FILE_DIR}/results/cm_norm_test_whole_{args.restrict}_restrict_{args.test_type}_{args.model_type}_nomask{args.no_mask}.jpg', bbox_inches = 'tight')
+        else:
+            plt.savefig(f'{FILE_DIR}/results/cm_norm_not_test_whole_{args.restrict}_restrict_{args.test_type}_{args.model_type}_nomask{args.no_mask}.jpg', bbox_inches = 'tight')
     plt.close()
     cm_display = metrics.ConfusionMatrixDisplay(confusion_matrix = confusion_matrix, display_labels = ["no_action","connectors","screws","wheels"])
     cm_display.plot()
-    # if args.test_whole:
-    #     plt.savefig(f'{FILE_DIR}/results/cm_test_whole_{args.restrict}_restrict_{args.test_type}_{args.model_type}_nomask{args.no_mask}.jpg', bbox_inches = 'tight')
-    # else:
-    #     plt.savefig(f'{FILE_DIR}/results/cm_not_test_whole_{args.restrict}_restrict_{args.test_type}_{args.model_type}_nomask{args.no_mask}.jpg', bbox_inches = 'tight')
+    # if args.save_fig:
+        # if args.test_whole:
+        #     plt.savefig(f'{FILE_DIR}/results/cm_test_whole_{args.restrict}_restrict_{args.test_type}_{args.model_type}_nomask{args.no_mask}.jpg', bbox_inches = 'tight')
+        # else:
+        #     plt.savefig(f'{FILE_DIR}/results/cm_not_test_whole_{args.restrict}_restrict_{args.test_type}_{args.model_type}_nomask{args.no_mask}.jpg', bbox_inches = 'tight')
     count = count / len(dataset)
     print(f"length of dataset:{len(dataset)}")
     print(f"accuracy: {1 - count}")

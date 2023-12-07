@@ -36,6 +36,8 @@ if __name__ == '__main__':
                         help='whether to test on build_cars tasks')
     parser.add_argument('--no_mask', action="store_true",
                         help='whether to remove mask')
+    parser.add_argument('--filter_type', type=str,default=None,
+                        help='Trajectory filter type, must be used together with no_mask,four options:["median","wiener","kalman","ema"]')
     parser.add_argument('--model_type',type=str,default="final_traj",
                         help='two options:[final_intention,final_traj]')
     parser.add_argument('--input_type', type=str,default="pkl",
@@ -56,8 +58,9 @@ if __name__ == '__main__':
         JSON_FILE = f'{ROOT_DIR}/cut_traj_mask.json'
 
     batch_size = args.batch_size
-    dataset = MyDataset(JSON_FILE,ROOT_DIR,args,dataset_type="train",test_whole=args.test_whole,input_type=args.input_type)
+    dataset = MyDataset(JSON_FILE,ROOT_DIR,args,dataset_type="train")
     dataloader = DataLoader(dataset, batch_size=batch_size,shuffle=True)
+    print("data loaded!")
     # pdb.set_trace()
     class_criterion = torch.nn.CrossEntropyLoss(weight=dataset.weights)
     traj_criterion = torch.nn.MSELoss()
@@ -79,9 +82,11 @@ if __name__ == '__main__':
             count += 1
                 
         print(f'Epoch {epoch + 1}, Loss: {running_loss / count}')
-    # if args.test_whole:
-    torch.save(net.state_dict(), f'{FILE_DIR}/checkpoints/seq{args.seq_len}_pred{args.pred_len}_epoch{epochs}_whole_{args.input_type}_{args.model_type}_nomask{args.no_mask}.pth')
-    # else:
-    #     torch.save(net.state_dict(), f'{FILE_DIR}/checkpoints/seq{args.seq_len}_pred{args.pred_len}_epoch{epochs}_not_whole_{args.input_type}.pth')
+    if args.filter_type:
+        torch.save(net.state_dict(), f'{FILE_DIR}/checkpoints/seq{args.seq_len}_pred{args.pred_len}_epoch{epochs}_whole_{args.input_type}_{args.model_type}_nomask{args.no_mask}_filter{args.filter_type}.pth')
+    else:
+        torch.save(net.state_dict(), f'{FILE_DIR}/checkpoints/seq{args.seq_len}_pred{args.pred_len}_epoch{epochs}_whole_{args.input_type}_{args.model_type}_nomask{args.no_mask}.pth')
+
+
     
 

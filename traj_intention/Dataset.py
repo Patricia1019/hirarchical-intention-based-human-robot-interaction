@@ -6,6 +6,7 @@ import argparse
 import pickle
 from pathlib import Path
 import os,sys
+from Filter import Smooth_Filter
 sys.path.append('./depthai_blazepose')
 import mediapipe_utils as mpu
 FILE_DIR = Path(__file__).resolve().parent
@@ -35,7 +36,7 @@ def camera_to_world(X, R= np.array([0.14070565, -0.15007018, -0.7552408, 0.62232
     return qrot(np.tile(R, (*X.shape[:-1], 1)), X) + t
 
 class MyDataset(Dataset):
-    def __init__(self, json_file, root_dir, args,dataset_type="train",transform=None,test_whole=True,input_type="pkl"):
+    def __init__(self, json_file, root_dir, args,dataset_type="train",transform=None):
         self.json_file = json_file
         self.transform = transform
         self.root_dir = root_dir
@@ -43,10 +44,13 @@ class MyDataset(Dataset):
         self.pred_len = args.pred_len
         self.channels = args.channels
         self.type = dataset_type
-        self.test_whole = test_whole
+        self.test_whole = args.test_whole
         self.half_body = args.half_body
         self.intention_list = INTENTION_LIST
-        self.input_type = input_type
+        self.input_type = args.input_type
+        self.filter_type = args.filter_type
+        if args.filter_type:
+            self.filter = Smooth_Filter(args.filter_type)
         self.data,self.weights = self.process_json()
 
     def process_json(self):
@@ -90,7 +94,10 @@ class MyDataset(Dataset):
                         end_index = points['end'][i] - 1
                         start_index = points['start'][i] - 1
                         for j in range(start_index,end_index-self.pred_len-self.seq_len+1):
-                            posInputs = torch.from_numpy(npy_file[j:j+self.seq_len].reshape(self.seq_len,self.channels)).float()
+                            posInputs = npy_file[j:j+self.seq_len]
+                            if self.filter_type:
+                                posInputs = self.filter.smooth_multi_trajectories(posInputs)
+                            posInputs = torch.from_numpy(posInputs.reshape(self.seq_len,self.channels)).float()
                             posOutputs = torch.from_numpy(npy_file[j+self.seq_len:j+self.seq_len+self.pred_len].reshape(self.pred_len,self.channels)).float()
                             task_data.append((posInputs,posOutputs,torch.tensor(intention_label)))
                             weights[intention_label] += 1
@@ -109,7 +116,10 @@ class MyDataset(Dataset):
                     except:
                         random_numbers = np.random.choice(array, pos_data_num, replace=True)
                     for j in random_numbers:
-                        negInputs = torch.from_numpy(npy_file[j:j+self.seq_len].reshape(self.seq_len,self.channels)).float()
+                        negInputs = npy_file[j:j+self.seq_len]
+                        if self.filter_type:
+                            negInputs = self.filter.smooth_multi_trajectories(negInputs)
+                        negInputs = torch.from_numpy(negInputs.reshape(self.seq_len,self.channels)).float()
                         negOutputs = torch.from_numpy(npy_file[j+self.seq_len:j+self.seq_len+self.pred_len].reshape(self.pred_len,self.channels)).float()
                         task_data.append((negInputs,negOutputs,torch.tensor(0)))
                         weights[0] += 1 
@@ -152,7 +162,10 @@ class MyDataset(Dataset):
                         array.extend(np.arange(start_index,end_index-self.seq_len-self.pred_len+1))
                         random_numbers = np.random.choice(array, len(array)//10, replace=False)
                         for j in random_numbers:
-                            posInputs = torch.from_numpy(npy_file[j:j+self.seq_len].reshape(self.seq_len,self.channels)).float()
+                            posInputs = npy_file[j:j+self.seq_len]
+                            if self.filter_type:
+                                posInputs = self.filter.smooth_multi_trajectories(posInputs)
+                            posInputs = torch.from_numpy(posInputs.reshape(self.seq_len,self.channels)).float()
                             posOutputs = torch.from_numpy(npy_file[j+self.seq_len:j+self.seq_len+self.pred_len].reshape(self.pred_len,self.channels)).float()
                             task_data.append((posInputs,posOutputs,torch.tensor(intention_label)))
                             weights[intention_label] += 1
