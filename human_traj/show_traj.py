@@ -107,7 +107,7 @@ def render(poses, output, skeleton=Skeleton(), fps=6, bitrate=30000, azim=np.arr
     ax_in.get_xaxis().set_visible(False)
     ax_in.get_yaxis().set_visible(False)
     ax_in.set_axis_off()
-    ax_in.set_title('Input')
+    ax_in.set_title('Input', pad=60, fontsize=15)
 
     # prevent wired error
     _ = Axes3D.__class__.__name__
@@ -126,8 +126,9 @@ def render(poses, output, skeleton=Skeleton(), fps=6, bitrate=30000, azim=np.arr
         ax.set_xticklabels([])
         ax.set_yticklabels([])
         ax.set_zticklabels([])
-        ax.dist = 12.5
-        ax.set_title(title)  # , pad=35
+        ax.dist = 7.5
+        # ax.dist = 2
+        ax.set_title(title, pad=0, fontsize=15)  # , pad=35
         ax_3d.append(ax)
         lines_3d.append([])
         trajectories.append(data[:, 0, [0, 1]])
@@ -245,13 +246,13 @@ poses = []
 for body in traj:
     poses.append(body.landmarks)
 poses = np.array(poses)
-poses_norm = 2*(poses-poses.min())/(poses.max()-poses.min())
+poses_norm = 3*(poses-poses.min())/(poses.max()-poses.min())
 # poses_norm = 2*(poses_norm-poses_norm.min(0).min(0))/(poses_norm.max(0).max(0)-poses_norm.min(0).min(0))
 poses_world = camera_to_world(poses_norm)
 poses_world[:, :, 2] -= np.min(poses_world[:, :, 2])
 # pdb.set_trace()
-np.save(f'{ROOT_DIR}/{task}.npy',poses_world)
-predictions = {"ours":poses_world}
+# np.save(f'{ROOT_DIR}/{task}.npy',poses_world)
+predictions = {"Pose":poses_world}
 # ROOT_DIR = f'{FILE_DIR}/../close_estimation/{task[:-3]}'
 render(predictions,f'{ROOT_DIR}/{task}.mp4',task=task,input_type=args.input_type)
 print("ok")
