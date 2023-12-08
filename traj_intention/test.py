@@ -130,9 +130,9 @@ if __name__ == '__main__':
     cm_display_norm.plot()
     if args.save_fig:
         if args.test_whole:
-            plt.savefig(f'{FILE_DIR}/results/{args.model_typ}/cm_norm_test_whole_{args.restrict}_restrict_{args.test_type}_nomask{args.no_mask}.jpg', bbox_inches = 'tight')
+            plt.savefig(f'{FILE_DIR}/results/{args.model_type}/cm_norm_test_whole_{args.restrict}_restrict_{args.test_type}_nomask{args.no_mask}.jpg', bbox_inches = 'tight')
         else:
-            plt.savefig(f'{FILE_DIR}/results/{args.model_typ}/cm_norm_not_test_whole_{args.restrict}_restrict_{args.test_type}_nomask{args.no_mask}.jpg', bbox_inches = 'tight')
+            plt.savefig(f'{FILE_DIR}/results/{args.model_type}/cm_norm_not_test_whole_{args.restrict}_restrict_{args.test_type}_nomask{args.no_mask}.jpg', bbox_inches = 'tight')
     plt.close()
     
 
