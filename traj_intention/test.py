@@ -77,6 +77,7 @@ if __name__ == '__main__':
     for key,value in INTENTION_LIST.items():
         acc_list[key] = []
     acc_list["all"] = []
+    confusion_matrix = []
     for i in range(repeat_num):
         dataset = MyDataset(JSON_FILE,ROOT_DIR,args,dataset_type=args.test_type)
         dataloader = DataLoader(dataset, batch_size=1, shuffle=True)
@@ -102,25 +103,11 @@ if __name__ == '__main__':
 
         intention_list = np.array(intention_list)
         labels_list = np.array(labels_list)
-        confusion_matrix = metrics.confusion_matrix(labels_list,intention_list)
-        confusion_matrix_norm = metrics.confusion_matrix(labels_list,intention_list,normalize='true')
-        # pdb.set_trace()
-        # confusion_matrix_norm = confusion_matrix/confusion_matrix.sum(1)
-        cm_display_norm = metrics.ConfusionMatrixDisplay(confusion_matrix = confusion_matrix_norm, display_labels = ["no_action","connectors","screws","wheels"])
-        cm_display_norm.plot()
-        if args.save_fig:
-            if args.test_whole:
-                plt.savefig(f'{FILE_DIR}/results/cm_norm_test_whole_{args.restrict}_restrict_{args.test_type}_{args.model_type}_nomask{args.no_mask}.jpg', bbox_inches = 'tight')
-            else:
-                plt.savefig(f'{FILE_DIR}/results/cm_norm_not_test_whole_{args.restrict}_restrict_{args.test_type}_{args.model_type}_nomask{args.no_mask}.jpg', bbox_inches = 'tight')
-        plt.close()
-        cm_display = metrics.ConfusionMatrixDisplay(confusion_matrix = confusion_matrix, display_labels = ["no_action","connectors","screws","wheels"])
-        cm_display.plot()
-        # if args.save_fig:
-            # if args.test_whole:
-            #     plt.savefig(f'{FILE_DIR}/results/cm_test_whole_{args.restrict}_restrict_{args.test_type}_{args.model_type}_nomask{args.no_mask}.jpg', bbox_inches = 'tight')
-            # else:
-            #     plt.savefig(f'{FILE_DIR}/results/cm_not_test_whole_{args.restrict}_restrict_{args.test_type}_{args.model_type}_nomask{args.no_mask}.jpg', bbox_inches = 'tight')
+        if len(confusion_matrix)>0:
+            confusion_matrix += metrics.confusion_matrix(labels_list,intention_list)
+        else:
+            confusion_matrix = metrics.confusion_matrix(labels_list,intention_list)
+
         count = count / len(dataset)
         print(f"length of dataset:{len(dataset)}")
         print(f"accuracy: {1 - count}")
@@ -138,5 +125,14 @@ if __name__ == '__main__':
         acc_list[key] = compute_mean_and_conf_interval(value)
     print(acc_list)
 
+    confusion_matrix_norm = metrics.confusion_matrix(labels_list,intention_list,normalize='true')
+    cm_display_norm = metrics.ConfusionMatrixDisplay(confusion_matrix = confusion_matrix_norm, display_labels = ["no_action","connectors","screws","wheels"])
+    cm_display_norm.plot()
+    if args.save_fig:
+        if args.test_whole:
+            plt.savefig(f'{FILE_DIR}/results/cm_norm_test_whole_{args.restrict}_restrict_{args.test_type}_{args.model_type}_nomask{args.no_mask}.jpg', bbox_inches = 'tight')
+        else:
+            plt.savefig(f'{FILE_DIR}/results/cm_norm_not_test_whole_{args.restrict}_restrict_{args.test_type}_{args.model_type}_nomask{args.no_mask}.jpg', bbox_inches = 'tight')
+    plt.close()
     
 
