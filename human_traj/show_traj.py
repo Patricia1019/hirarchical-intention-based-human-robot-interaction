@@ -144,7 +144,10 @@ def render(poses, output, skeleton=Skeleton(), fps=6, bitrate=30000, azim=np.arr
         images = os.listdir(input_image_path)
         images.sort(key=lambda x:int(x[:-4]))
         for img in images:
-            all_frames.append(cv2.imread(f'{input_image_path}/{img}'))
+            img = cv2.imread(f'{input_image_path}/{img}',cv2.IMREAD_COLOR)
+            b,g,r = cv2.split(img)
+            img = cv2.merge((r,g,b))
+            all_frames.append(img)
     else:
         print("Invalid Input! Using black background!")
         # Black background
