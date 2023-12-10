@@ -83,9 +83,9 @@ class MyDataset(Dataset):
                         for body in pkl_file:
                             poses.append(body.landmarks)
                         npy_file = np.array(poses)
-                        npy_file = 2*(npy_file-npy_file.min())/(npy_file.max()-npy_file.min())
-                        npy_file = camera_to_world(npy_file)
-                        npy_file[:, :, 2] -= np.min(npy_file[:, :, 2])
+                        # npy_file = 2*(npy_file-npy_file.min())/(npy_file.max()-npy_file.min())
+                        # npy_file = camera_to_world(npy_file)
+                        # npy_file[:, :, 2] -= np.min(npy_file[:, :, 2])
                         # pdb.set_trace()
                     
                     assert len(points['start']) == len(points['end']), f"The number of start points and end points doesn't match in {task}!"
@@ -95,10 +95,17 @@ class MyDataset(Dataset):
                         start_index = points['start'][i] - 1
                         for j in range(start_index,end_index-self.pred_len-self.seq_len+1):
                             posInputs = npy_file[j:j+self.seq_len]
+                            posInputs = 2*(posInputs-posInputs.min())/(posInputs.max()-posInputs.min())
+                            posInputs = camera_to_world(posInputs)
+                            posInputs[:, :, 2] -= np.min(posInputs[:, :, 2])
                             if self.filter_type:
                                 posInputs = self.filter.smooth_multi_trajectories(posInputs)
                             posInputs = torch.from_numpy(posInputs.reshape(self.seq_len,self.channels)).float()
-                            posOutputs = torch.from_numpy(npy_file[j+self.seq_len:j+self.seq_len+self.pred_len].reshape(self.pred_len,self.channels)).float()
+                            posOutputs = npy_file[j+self.seq_len:j+self.seq_len+self.pred_len]
+                            posOutputs = 2*(posOutputs-posOutputs.min())/(posOutputs.max()-posOutputs.min())
+                            posOutputs = camera_to_world(posOutputs)
+                            posOutputs[:, :, 2] -= np.min(posOutputs[:, :, 2])
+                            posOutputs = torch.from_numpy(posOutputs.reshape(self.pred_len,self.channels)).float()
                             task_data.append((posInputs,posOutputs,torch.tensor(intention_label)))
                             weights[intention_label] += 1
 
@@ -117,11 +124,18 @@ class MyDataset(Dataset):
                         random_numbers = np.random.choice(array, pos_data_num, replace=True)
                     for j in random_numbers:
                         negInputs = npy_file[j:j+self.seq_len]
+                        negInputs = 2*(negInputs-negInputs.min())/(negInputs.max()-negInputs.min())
+                        negInputs = camera_to_world(negInputs)
+                        negInputs[:, :, 2] -= np.min(negInputs[:, :, 2])
                         if self.filter_type:
                             negInputs = self.filter.smooth_multi_trajectories(negInputs)
                         negInputs = torch.from_numpy(negInputs.reshape(self.seq_len,self.channels)).float()
-                        negOutputs = torch.from_numpy(npy_file[j+self.seq_len:j+self.seq_len+self.pred_len].reshape(self.pred_len,self.channels)).float()
-                        task_data.append((negInputs,negOutputs,torch.tensor(0)))
+                        negOutputs = npy_file[j+self.seq_len:j+self.seq_len+self.pred_len]
+                        negOutputs = 2*(negOutputs-negOutputs.min())/(negOutputs.max()-negOutputs.min())
+                        negOutputs = camera_to_world(negOutputs)
+                        negOutputs[:, :, 2] -= np.min(negOutputs[:, :, 2])
+                        negOutputs = torch.from_numpy(negOutputs.reshape(self.pred_len,self.channels)).float()
+                        task_data.append((negInputs,negOutputs,torch.tensor(0)))   
                         weights[0] += 1 
                         # pdb.set_trace()
 
@@ -148,9 +162,9 @@ class MyDataset(Dataset):
                         for body in pkl_file:
                             poses.append(body.landmarks)
                         npy_file = np.array(poses)
-                        npy_file = 2*(npy_file-npy_file.min())/(npy_file.max()-npy_file.min())
-                        npy_file = camera_to_world(npy_file)
-                        npy_file[:, :, 2] -= np.min(npy_file[:, :, 2])
+                        # npy_file = 2*(npy_file-npy_file.min())/(npy_file.max()-npy_file.min())
+                        # npy_file = camera_to_world(npy_file)
+                        # npy_file[:, :, 2] -= np.min(npy_file[:, :, 2])
                         # pdb.set_trace()
                     
                     assert len(points['start']) == len(points['end']), f"The number of start points and end points doesn't match in {task}!"
@@ -163,10 +177,17 @@ class MyDataset(Dataset):
                         random_numbers = np.random.choice(array, len(array)//10, replace=False)
                         for j in random_numbers:
                             posInputs = npy_file[j:j+self.seq_len]
+                            posInputs = 2*(posInputs-posInputs.min())/(posInputs.max()-posInputs.min())
+                            posInputs = camera_to_world(posInputs)
+                            posInputs[:, :, 2] -= np.min(posInputs[:, :, 2])
                             if self.filter_type:
                                 posInputs = self.filter.smooth_multi_trajectories(posInputs)
                             posInputs = torch.from_numpy(posInputs.reshape(self.seq_len,self.channels)).float()
-                            posOutputs = torch.from_numpy(npy_file[j+self.seq_len:j+self.seq_len+self.pred_len].reshape(self.pred_len,self.channels)).float()
+                            posOutputs = npy_file[j+self.seq_len:j+self.seq_len+self.pred_len]
+                            posOutputs = 2*(posOutputs-posOutputs.min())/(posOutputs.max()-posOutputs.min())
+                            posOutputs = camera_to_world(posOutputs)
+                            posOutputs[:, :, 2] -= np.min(posOutputs[:, :, 2])
+                            posOutputs = torch.from_numpy(posOutputs.reshape(self.pred_len,self.channels)).float()
                             task_data.append((posInputs,posOutputs,torch.tensor(intention_label)))
                             weights[intention_label] += 1
 

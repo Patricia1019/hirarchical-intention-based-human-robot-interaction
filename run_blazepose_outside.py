@@ -415,7 +415,7 @@ if __name__ == '__main__':
                         help='four options:[no,working_area,ood,all]') 
     parser.add_argument('--outer_restrict',type=str,default="working_area",
                         help='outer restriction')
-    parser.add_argument('--model_type',type=str,default="final_traj",
+    parser.add_argument('--model_type',type=str,default="final_intention",
                         help='two options:[final_intention,final_traj]')
     args = parser.parse_args()
 
