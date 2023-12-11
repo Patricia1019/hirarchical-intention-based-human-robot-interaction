@@ -11,6 +11,7 @@ This repo will consist of three parts:
 * run pipeline v3: add mask
 * try handpose and add human traj visualization: add handpose but we don't need such precise prediction, add human traj visualization(based on PSTMO visualization settings)
 * run pipeline v4: add intention and robot control into pipeline and hopefully it works! But there are a lot of things to do, such as design more complicated control module and add more intention into it.
+* run pipeline v5: fix bugs for controller and intention prediction, can run the whole pipeline and prepare the user study now!
 
 ## Human_traj link:
 https://drive.google.com/drive/folders/1YUqPF1TJxWBESdfgY9P-f4x1rXedP34I?usp=drive_link
