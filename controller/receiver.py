@@ -4,6 +4,7 @@ import rospy
 from std_msgs.msg import String,Float64MultiArray
 from geometry_msgs.msg import Pose,PoseStamped
 import time
+import argparse
 from pathlib import Path
 FILE_DIR = Path(__file__).parent
 import pdb
@@ -31,7 +32,7 @@ def ComposePoseFromTransQuat(data_frame):
     return pose
 
 class PlanGraph:
-    def __init__(self):
+    def __init__(self,args):
         self.TUBE_SUM = {"short":8,"long":4}
         self.tube_count = {"short":0,"long":0}
         self.screw_count = {"bottom":0,"four_tubes":0,"top":0}
@@ -39,19 +40,26 @@ class PlanGraph:
         self.stage_record = {"bottom":[],"four_tubes":[],"top":[]} # tube records
         self.stage = None
         self.stage_history = [] # stages that have already been completed
-
+        if args.stageI_done:
+            self.tube_count = {"short":2,"long":2}
+            self.screw_count = {"bottom":4,"four_tubes":0,"top":0}
+            self.action_history = ["get_short_tubes","get_long_tubes","get_short_tubes","get_long_tubes"]
+            self.stage_record = {"bottom":["get_short_tubes","get_long_tubes","get_short_tubes","get_long_tubes"],"four_tubes":[],"top":[]}
+            self.stage_history = ["bottom"]
 
 class Receiver:
-    def __init__(self):
+    def __init__(self,args):
         self.intention_list = []
         self.command_list = []
         self.command = None
         self.old_command_data = None
         self.GRIP_TIME = 1.2
-        self.plangraph = PlanGraph()
+        self.plangraph = PlanGraph(args)
         self.REVERT_LIST = {"grip":"open","open":"grip"}
         self.executing = False
         self.hand_getting_object = False
+        if args.stageI_done:
+            self.intention_list = ["get_connectors"]*4
 
     def receive_pose(self,data):
         pos_x = data.pose.position.x
@@ -606,14 +614,14 @@ class Receiver:
                 return False
             
     
-def listener():
+def listener(args):
 
     # In ROS, nodes are uniquely named. If two nodes with the same
     # name are launched, the previous one is kicked off. The
     # anonymous=True flag means that rospy will choose a unique
     # name for our 'listener' node so that multiple listeners can
     # run simultaneously.
-    receiver = Receiver()
+    receiver = Receiver(args)
     rospy.init_node('listener', anonymous=True)
 
     # rospy.Subscriber("chatter", String, controller)
@@ -624,5 +632,9 @@ def listener():
     rospy.spin()
 
 if __name__ == '__main__':
-    listener()
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--stageI_done', action="store_true",
+                    help="whether to set stage I as done")
+    args = parser.parse_args()
+    listener(args)
     # print("ok")
