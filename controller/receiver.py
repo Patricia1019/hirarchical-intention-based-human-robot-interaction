@@ -36,6 +36,7 @@ class PlanGraph:
         self.TUBE_SUM = {"short":8,"long":4}
         self.tube_count = {"short":0,"long":0}
         self.screw_count = {"bottom":0,"four_tubes":0,"top":0}
+        self.wheels_count = 0
         self.action_history = []
         self.stage_record = {"bottom":[],"four_tubes":[],"top":[]} # tube records
         self.stage = None
@@ -405,8 +406,8 @@ class Receiver:
                 speed = [0.7] * len(target_list)
                 speed[-1] = 0
             elif action[1] % 4 == 3:
-                target_list = [spin_final,up,grip_final,back,retract]
-                unique_actions = {target_list.index(spin_final)+1:["open"],target_list.index(grip_final)+1:["grip","wait15","open"]}
+                target_list = [spin_final,back,retract]
+                unique_actions = {target_list.index(spin_final)+1:["wait20","open"]}
                 speed = [0.7] * len(target_list)  
                 speed[-2] = 0
                 speed[-1] = 0
@@ -425,11 +426,11 @@ class Receiver:
                 back = (0.48,0.05,0.19,0,1,0,0)
                 if action[1] == 0:
                     target_list = [ready,grip]
-                    unique_actions = {2:["grip"]}
+                    unique_actions = {target_list.index(grip)+1:["grip"]}
                     speed = [0.7] * len(target_list)
                 elif action[1] == 1:
-                    target_list = [middle_spin,spin,up,back,retract]
-                    unique_actions = {2:["wait15","open"]}
+                    target_list = [middle_spin,spin]
+                    unique_actions = {}
                     speed = [0.7] * len(target_list)
                     speed[1] = 0
                     speed[-1] = 0
@@ -444,11 +445,11 @@ class Receiver:
                 back = (0.48,0.05,0.19,0,1,0,0)
                 if action[1] == 0:
                     target_list = [ready,grip]
-                    unique_actions = {2:["grip"]}
+                    unique_actions = {target_list.index(grip)+1:["grip"]}
                     speed = [0.7] * len(target_list)
                 elif action[1] == 1:
                     target_list = [middle_spin,spin,up,back,retract]
-                    unique_actions = {2:["wait15","open"]}
+                    unique_actions = {target_list.index(spin)+1:["wait20","open"]}
                     speed = [0.7] * len(target_list)
                     speed[1] = 0   
                     speed[-1] = 0          
@@ -457,11 +458,11 @@ class Receiver:
             retract = RETRACT_POSITION
             pre_ready = (0.58,0.25,0.19,0,-0.7,-0.7,0)
             ready = (0.58,0.25,0.19,0,0,1,0)
-            grip = (0.58,0.25,0.11,0,0,1,0)
-            middle_spin = (0.48,0.06,0.11,0,1,1,0)
-            spin = (0.4,0.27,0.11,0,1,0,0)
-            spin_final = (0.5,0.27,0.11,0,1,-1,0)
-            grip_final = (0.48,0.06,0.11,0,1,-1,0)
+            grip = (0.58,0.25,0.09,0,0,1,0)
+            middle_spin = (0.48,0.06,0.09,0,1,1,0)
+            spin = (0.4,0.27,0.09,0,1,0,0)
+            spin_final = (0.5,0.27,0.09,0,1,-1,0)
+            grip_final = (0.48,0.06,0.09,0,1,-1,0)
             up = (0.5,0.27,0.19,0,1,-1,0)
             back = (0.48,0.05,0.19,0,1,0,0)
             if action[1] % 4 == 0:
@@ -479,13 +480,49 @@ class Receiver:
                 speed = [0.7] * len(target_list)
                 speed[-1] = 0
             elif action[1] % 4 == 3:
-                target_list = [spin_final,up,grip_final,back,retract]
-                unique_actions = {target_list.index(spin_final)+1:["open"],target_list.index(grip_final)+1:["grip","wait15","open"]}
+                target_list = [spin_final]
+                unique_actions = {}
                 speed = [0.7] * len(target_list) 
-                speed[-3] = 0 
-                speed[-2] = 0
-                speed[-1] = 0
-        
+                speed[0] = 0
+
+        if action[0] == "lift_up":
+            if self.plangraph.stage_history[-1] == "top":
+                retract = RETRACT_POSITION
+                up = (0.5,0.27,0.17,0,1,-1,0)
+                spin = (0.48,0.06,0.18,0,1,1,0)
+                ready = (0.5,0.27,0.18,0,1,1,0)
+                grip = (0.5,0.27,0.09,0,1,1,0)
+                up2 = (0.5,0.27,0.18,0,1,1,0)
+                if action[1] == 0:
+                    target_list = [up]
+                    unique_actions = {}
+                    speed = [0.7] * len(target_list)
+                elif action[1] == 1:
+                    target_list = [spin,ready,grip,up2,retract]
+                    unique_actions = {target_list.index(spin)+1:["open"],target_list.index(grip)+1:["grip"],target_list.index(up2)+1:["wait20","open"]}
+                    speed = [0.7] * len(target_list)
+                    speed[0] = 0
+                    speed[-1] = 0
+            elif self.plangraph.stage_history[-1] == "four_tubes":
+                retract = RETRACT_POSITION
+                init_spin = (0.5,0.27,0.09,0,1,-1,0)
+                up = (0.5,0.27,0.17,0,1,-1,0)
+                spin = (0.48,0.06,0.17,0,1,1,0)
+                ready = (0.5,0.27,0.18,0,1,1,0)
+                grip = (0.5,0.27,0.09,0,1,1,0)
+                up2 = (0.5,0.27,0.18,0,1,1,0)
+                if action[1] == 0:
+                    target_list = [init_spin,up]
+                    unique_actions = {}
+                    speed = [0.7] * len(target_list)
+                    speed[0] = 0
+                elif action[1] == 1:
+                    target_list = [spin,ready,grip,up2,retract]
+                    unique_actions = {target_list.index(spin)+1:["open"],target_list.index(grip)+1:["grip"],target_list.index(up2)+1:["wait20","open"]}
+                    speed = [0.7] * len(target_list)
+                    speed[0] = 0
+                    speed[-1] = 0
+
         waypoints_list = []
         for i in range(len(target_list)):
             if i == 0:
@@ -531,11 +568,12 @@ class Receiver:
                 tube_key = "short"
             return [f"get_{tube_key}_tubes",self.plangraph.tube_count[tube_key]]
 
-        if data == "get_wheels" and "lift_up" not in self.plangraph.action_history:
-            data = "get_screws"
+        # if data == "get_wheels" and (self.plangraph.action_history.count("spin_bottom") + self.plangraph.action_history.count("spin_four_tubes") + self.plangraph.action_history.count("spin_top")) < 10:
+        #     data = "get_screws"
+        self.plangraph.stage_history = ["bottom","four_tubes","top"] # for debugging
 
         if data == "get_screws" and self.plangraph.stage_history:
-            if (self.plangraph.action_history.count("spin_bottom") + self.plangraph.action_history.count("spin_four_tubes") + self.plangraph.action_history.count("spin_top")) == 10:
+            if (self.plangraph.action_history.count("spin_bottom") + self.plangraph.action_history.count("spin_four_tubes") + self.plangraph.action_history.count("spin_top")) >= 10:
                 data = "get_wheels"
             elif self.plangraph.stage_history[-1] == "bottom":
                 stage = "bottom"
@@ -574,6 +612,15 @@ class Receiver:
                     if self.plangraph.screw_count[stage] == 5:
                         self.plangraph.screw_count[stage] = 1
                         return ["spin_top",self.plangraph.action_history.count("spin_top")]
+
+        if data == "get_wheels" and self.plangraph.stage_history:
+            self.plangraph.wheels_count += 1
+            if self.plangraph.wheels_count == 1 or self.plangraph.wheels_count == 3:
+                return ["lift_up",self.plangraph.action_history.count("lift_up")]
+
+        if data == "get up" and self.plangraph.stage_history:
+            self.plangraph.wheels_count += 1
+            return ["lift_up",self.plangraph.action_history.count("lift_up")]
 
         if data == "spin" and self.plangraph.stage_history:
             if self.plangraph.stage_history[-1] == "bottom":
