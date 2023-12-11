@@ -508,7 +508,7 @@ class Receiver:
             #     if len(self.plangraph.stage_record[stage]) < 4 and self.plangraph.stage != "four_tubes":
             if len(self.plangraph.stage_record["bottom"]) < 4:
                 stage = "bottom"
-            elif (self.intention_list.count(data) >= 4 or "get_screws" in self.plangraph.action_history) and self.plangraph.stage != "four_tubes" and len(self.plangraph.stage_record["top"]) < 4:
+            elif (self.intention_list.count(data) >= 4 or "spin_bottom" in self.plangraph.action_history) and self.plangraph.stage != "four_tubes" and len(self.plangraph.stage_record["top"]) < 4:
                 stage = "top"
             else:
                 return None,None
@@ -523,7 +523,7 @@ class Receiver:
                 tube_key = "short"
             return [f"get_{tube_key}_tubes",self.plangraph.tube_count[tube_key]]
 
-        if (data == "get_screws" or data =="spin") and self.plangraph.stage_history:
+        if data == "get_screws" and self.plangraph.stage_history:
             if self.plangraph.stage_history[-1] == "bottom":
                 stage = "bottom"
                 self.plangraph.screw_count[stage] += 1
@@ -537,7 +537,10 @@ class Receiver:
                 self.plangraph.screw_count[stage] += 1
                 if self.plangraph.screw_count[stage] == 1:
                     return ["spin_four_tubes",self.plangraph.action_history.count("spin_four_tubes")]
-                if self.plangraph.screw_count[stage] == 5:
+                if len(self.plangraph.stage_history) == 3 and self.plangraph.screw_count[stage] == 5:
+                    self.plangraph.screw_count[stage] = 1
+                    return ["spin_four_tubes",self.plangraph.action_history.count("spin_four_tubes")]
+                elif len(self.plangraph.stage_history) == 2 and self.plangraph.screw_count[stage] == 3:
                     self.plangraph.screw_count[stage] = 1
                     return ["spin_four_tubes",self.plangraph.action_history.count("spin_four_tubes")]
             elif self.plangraph.stage_history[-1] == "top":
@@ -557,6 +560,23 @@ class Receiver:
                     if self.plangraph.screw_count[stage] == 3:
                         self.plangraph.screw_count[stage] = 1
                         return ["spin_top",self.plangraph.action_history.count("spin_top")]
+
+        if data == "spin" and self.plangraph.stage_history:
+            if self.plangraph.stage_history[-1] == "bottom":
+                stage = "bottom"
+                self.plangraph.screw_count[stage] = 1
+                return [f"spin_{stage}",self.plangraph.action_history.count(f"spin_{stage}")]
+            elif self.plangraph.stage_history[-1] == "four_tubes":
+                stage = "four_tubes"
+                self.plangraph.screw_count[stage] = 1
+                return [f"spin_{stage}",self.plangraph.action_history.count(f"spin_{stage}")]
+            elif self.plangraph.stage_history[-1] == "top":
+                stage = "top"
+                self.plangraph.screw_count[stage] = 1
+                if len(self.plangraph.stage_history) == 2:
+                    return ["spin_bottom",self.plangraph.action_history.count("spin_bottom")]
+                elif len(self.plangraph.stage_history) == 3:
+                    return ["spin_top",self.plangraph.action_history.count("spin_top")]
 
         if data == "short":
             if self.plangraph.tube_count["short"] < self.plangraph.TUBE_SUM["short"]:
