@@ -394,10 +394,11 @@ class Receiver:
                 unique_actions = {target_list.index(init_grip)+1:["grip"]}
                 speed = [0.7] * len(target_list)
             elif action[1] == 1:
-                target_list = [spin,ready,grip,up2,retract]
+                target_list = [spin,ready,grip,up2,back,retract]
                 unique_actions = {target_list.index(spin)+1:["open"],target_list.index(grip)+1:["grip"],target_list.index(up2)+1:["wait20","open"]}
                 speed = [0.7] * len(target_list)
                 speed[0] = 0
+                speed[-2] = 0
                 speed[-1] = 0
 
         waypoints_list = []
