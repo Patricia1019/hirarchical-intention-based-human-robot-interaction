@@ -149,7 +149,7 @@ class Receiver:
                 action = self.decide_send_action(command)
                 if action:
                     self.command = None
-                    BASE_INDEX = 2
+                    BASE_INDEX = 1
                     self.return_base(current_pose,target_list,unique_actions,i,BASE_INDEX)
                     self.execute_action(action,BASE_INDEX+1)
                     break
@@ -296,12 +296,12 @@ class Receiver:
             if i == 0:
                 tmp = []
                 for j in range(len(target_list[i])):
-                    tmp.append(target_list[i][j]+0.7*(target_list[i][j]-current_pose[j]))
+                    tmp.append(target_list[i][j]+0.5*(target_list[i][j]-current_pose[j]))
                 waypoints_list.append(tmp)
             if i > 0:
                 tmp = []
                 for j in range(len(target_list[i])):
-                    tmp.append(target_list[i][j]+0.7*(target_list[i][j]-target_list[i-1][j]))
+                    tmp.append(target_list[i][j]+0.5*(target_list[i][j]-target_list[i-1][j]))
                 waypoints_list.append(tmp)
         
         # revert unique actions
@@ -353,7 +353,7 @@ class Receiver:
             col = action[1]//2
             base = BASE
             get = (-0.28-x_interval*col,0.28-y_interval*row,0.2,0,-0.7,-0.7,0)
-            grip = (-0.28-x_interval*col,0.28-y_interval*row,-0.045,0,-0.7,-0.7,0)
+            grip = (-0.28-x_interval*col,0.28-y_interval*row,-0.048,0,-0.7,-0.7,0)
             deliver = (0.3,0.3,0.25,0,-0.7,-0.6,-0.2) # TODO: move with hand
             # target_list = [retract,ready,base,get,grip,get,base,ready,deliver,ready,retract]
             # unique_actions = {5:["grip"],9:["force_triggered"]}
@@ -568,7 +568,7 @@ class Receiver:
                 tube_key = "short"
             return [f"get_{tube_key}_tubes",self.plangraph.tube_count[tube_key]]
 
-        if data == "get_wheels" and (self.plangraph.action_history.count("spin_bottom") + self.plangraph.action_history.count("spin_four_tubes") + self.plangraph.action_history.count("spin_top")) < 10:
+        if data == "get_wheels" and (self.plangraph.action_history.count("spin_bottom") + self.plangraph.action_history.count("spin_four_tubes") + self.plangraph.action_history.count("spin_top")) < 8:
             data = "get_screws"
         # self.plangraph.stage_history = ["bottom","four_tubes","top"] # for debugging
 

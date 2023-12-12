@@ -278,6 +278,7 @@ def intention_sender(args):
                         righthand = landmarks[16]
                         rightelbow = landmarks[14]
                         rightshoulder = landmarks[12]
+                        lefthand = landmarks[15]
                         # upperbody = np.concatenate((landmarks[11:25,:],landmarks[0:1,:]),axis=0)
                         upperbody = body.landmarks
                         if len(traj_queue) < frame_size:
@@ -316,7 +317,10 @@ def intention_sender(args):
                         # else:
                         #     intention = ""
                         # old_upperbody = upperbody
+                        righthand_pose = body.xyz/10 + righthand*100
                         righthand_xpose = body.xyz[0]/10 + righthand[0]*100
+                        lefthand_pose = body.xyz/10 + lefthand*100
+                        lefthand_xpose = body.xyz[0]/10 + lefthand[0]*100
                         if intention:
                             if len(intention_queue) < send_window:
                                 if len(intention_queue) == 0:
@@ -339,7 +343,7 @@ def intention_sender(args):
                                             old_intention = intention
                                     elif intention == "get_screws":
                                         if args.outer_restrict == 'working_area':
-                                            if righthand_xpose > 10: 
+                                            if righthand_xpose > 100 or lefthand_xpose > 100: 
                                                 send_intention_to_ros(intention)
                                                 old_intention = intention
                                         else:
@@ -347,7 +351,7 @@ def intention_sender(args):
                                             old_intention = intention
                                     elif intention == "get_wheels":
                                         if args.outer_restrict == 'working_area':
-                                            if righthand_xpose > 10: 
+                                            if righthand_xpose > 100 or lefthand_xpose > 100: 
                                                 send_intention_to_ros(intention)
                                                 old_intention = intention
                                         else:
@@ -358,8 +362,9 @@ def intention_sender(args):
                                 intention_queue = []
 
 
-                        cv2.putText(masked_frame, f"intention:{intention}", (2, frame.shape[0] - 52), cv2.FONT_HERSHEY_TRIPLEX, 0.4, (255,255,255))
-                        cv2.putText(masked_frame, "right hand x: {:.2f}, y: {:.2f}, z: {:.2f}".format(landmarks[16,0],landmarks[16,1],landmarks[16,2]), (2, frame.shape[0] - 36), cv2.FONT_HERSHEY_TRIPLEX, 0.4, (255,255,255))
+                        cv2.putText(masked_frame, f"intention:{intention}", (2, frame.shape[0] - 68), cv2.FONT_HERSHEY_TRIPLEX, 0.4, (255,255,255))
+                        cv2.putText(masked_frame, "right hand x: {:.2f}, y: {:.2f}, z: {:.2f}".format(righthand_pose[0],righthand_pose[1],righthand_pose[2]), (2, frame.shape[0] - 52), cv2.FONT_HERSHEY_TRIPLEX, 0.4, (255,255,255))
+                        cv2.putText(masked_frame, "left hand x: {:.2f}, y: {:.2f}, z: {:.2f}".format(lefthand_pose[0],lefthand_pose[1],lefthand_pose[2]), (2, frame.shape[0] - 36), cv2.FONT_HERSHEY_TRIPLEX, 0.4, (255,255,255))
                         traj.append(body)
                         if not video:
                             cv2.imwrite(f'{ROOT_DIR}/images{task[-3:]}/{frame_count}.png',masked_frame)
@@ -407,7 +412,7 @@ if __name__ == '__main__':
                     help="name for traj.pkl and camera video")
     parser.add_argument('--seq_len', default=5,
                         help="input frame window")
-    parser.add_argument('--send_window', default=7,
+    parser.add_argument('--send_window', default=3,
                         help="send if intention is consecutively recognized in send_window")
     parser.add_argument('--video', action="store_true",
                     help="save video, else save images")
