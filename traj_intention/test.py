@@ -126,8 +126,10 @@ if __name__ == '__main__':
     print(acc_list)
 
     confusion_matrix_norm = metrics.confusion_matrix(labels_list,intention_list,normalize='true')
-    cm_display_norm = metrics.ConfusionMatrixDisplay(confusion_matrix = confusion_matrix_norm, display_labels = ["no_action","connectors","screws","wheels"])
-    cm_display_norm.plot()
+    cm_display_norm_display = metrics.ConfusionMatrixDisplay(confusion_matrix = confusion_matrix_norm, display_labels = ["no_action","connectors","screws","wheels"])
+    cm_display_norm_display.plot(ax=plt.gca())
+    # plt.text(3, 0, np.round(confusion_matrix_norm[0,3],4), color='red', ha='center', va='center')
+    # plt.text(2, 3, np.round(confusion_matrix_norm[3,2],3), color='red', ha='center', va='center')
     if args.save_fig:
         if args.test_whole:
             plt.savefig(f'{FILE_DIR}/results/{args.model_type}/cm_norm_test_whole_{args.restrict}_restrict_{args.test_type}_nomask{args.no_mask}.jpg', bbox_inches = 'tight')
