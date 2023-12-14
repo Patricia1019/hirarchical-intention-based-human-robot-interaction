@@ -42,6 +42,8 @@ if __name__ == '__main__':
                         help='two options:[final_intention,final_traj]')
     parser.add_argument('--input_type', type=str,default="pkl",
                         help='two options:[pkl,npy]')
+    parser.add_argument('--pose_world', action="store_true",
+                        help='whether to use landmarks_world')
     parser.add_argument('--epochs', type=int, default=40) 
     args = parser.parse_args()
 
@@ -58,7 +60,7 @@ if __name__ == '__main__':
         JSON_FILE = f'{ROOT_DIR}/cut_traj_mask.json'
 
     batch_size = args.batch_size
-    dataset = MyDataset(JSON_FILE,ROOT_DIR,args,dataset_type="train")
+    dataset = MyDataset(JSON_FILE,ROOT_DIR,args,dataset_type="train",world_pose=args.pose_world)
     dataloader = DataLoader(dataset, batch_size=batch_size,shuffle=True)
     print("data loaded!")
     # pdb.set_trace()
@@ -69,8 +71,11 @@ if __name__ == '__main__':
     for epoch in range(epochs):
         running_loss = 0.0
         count = 0
-        for batch in tqdm(dataloader):
-            inputs,target_traj,labels = batch
+        for batch,batch_world in tqdm(dataloader):
+            if args.pose_world:
+                inputs,target_traj,labels = batch_world
+            else:
+                inputs,target_traj,labels = batch
             pred_traj,pred_intention = net(inputs)
             traj_loss = traj_criterion(pred_traj,target_traj)
             intention_loss = class_criterion(pred_intention, labels)
@@ -82,6 +87,7 @@ if __name__ == '__main__':
             count += 1
                 
         print(f'Epoch {epoch + 1}, Loss: {running_loss / count}')
+        
     if args.filter_type:
         torch.save(net.state_dict(), f'{FILE_DIR}/checkpoints/seq{args.seq_len}_pred{args.pred_len}_epoch{epochs}_whole_{args.input_type}_{args.model_type}_nomask{args.no_mask}_filter{args.filter_type}.pth')
     else:

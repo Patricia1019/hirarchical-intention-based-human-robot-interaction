@@ -75,14 +75,15 @@ if __name__ == '__main__':
 
     # ckpt_path = f'{FILE_DIR}/checkpoints/seq{args.seq_len}_pred{args.pred_len}_epoch{args.epochs}_whole_{args.input_type}_{args.model_type}_nomask{args.no_mask}.pth'
     repeat_num = 1
-    acc_list = {}
-    for key,value in INTENTION_LIST.items():
-        acc_list[key] = []
-    acc_list["all"] = []
-    confusion_matrix = []
-    for i in range(repeat_num):
-        dataset = MyDataset(JSON_FILE,ROOT_DIR,args,dataset_type=args.test_type,world_pose=args.pose_world)
-        dataloader = DataLoader(dataset, batch_size=1, shuffle=True)
+    dataset = MyDataset(JSON_FILE,ROOT_DIR,args,dataset_type=args.test_type,world_pose=args.pose_world)
+    dataloader = DataLoader(dataset, batch_size=1, shuffle=True)
+    for restrict in ["no","ood","working_area","all"]:
+        acc_list = {}
+        for key,value in INTENTION_LIST.items():
+            acc_list[key] = []
+        acc_list["all"] = []
+        confusion_matrix = []
+        args.restrict = restrict
         print("data loaded!")
         # pdb.set_trace()
         count = 0
@@ -124,20 +125,31 @@ if __name__ == '__main__':
             acc_list[key].append(1-error[value].item())
         acc_list["all"].append(1-count)
 
-    for key,value in acc_list.items():
-        acc_list[key] = compute_mean_and_conf_interval(value)
-    print(acc_list)
+        for key,value in acc_list.items():
+            acc_list[key] = compute_mean_and_conf_interval(value)
+        print(acc_list)
 
-    confusion_matrix_norm = metrics.confusion_matrix(labels_list,intention_list,normalize='true')
-    cm_display_norm_display = metrics.ConfusionMatrixDisplay(confusion_matrix = confusion_matrix_norm, display_labels = ["no_action","connectors","screws","wheels"])
-    cm_display_norm_display.plot(ax=plt.gca())
-    # plt.text(3, 0, np.round(confusion_matrix_norm[0,3],4), color='red', ha='center', va='center')
-    # plt.text(2, 3, np.round(confusion_matrix_norm[3,2],3), color='red', ha='center', va='center')
-    if args.save_fig:
-        if args.test_whole:
-            plt.savefig(f'{FILE_DIR}/results/{args.model_type}/cm_norm_test_whole_{args.restrict}_restrict_{args.test_type}_nomask{args.no_mask}.jpg', bbox_inches = 'tight')
-        else:
-            plt.savefig(f'{FILE_DIR}/results/{args.model_type}/cm_norm_not_test_whole_{args.restrict}_restrict_{args.test_type}_nomask{args.no_mask}.jpg', bbox_inches = 'tight')
-    plt.close()
-    
+        confusion_matrix_norm = metrics.confusion_matrix(labels_list,intention_list,normalize='true')
+        confusion_matrix_norm = np.round(confusion_matrix_norm,3)
+        cm_display_norm_display = metrics.ConfusionMatrixDisplay(confusion_matrix = confusion_matrix_norm, display_labels = ["no_action","connectors","screws","wheels"])
+        cm_display_norm_display.plot(ax=plt.gca())
+        if restrict == "no":
+            plt.text(1, 0, confusion_matrix_norm[0,1], color='red', ha='center', va='center')
+            plt.text(2, 0, confusion_matrix_norm[0,2], color='red', ha='center', va='center')
+            plt.text(3, 0, confusion_matrix_norm[0,3], color='red', ha='center', va='center')
+            plt.text(2, 3, confusion_matrix_norm[3,2], color='red', ha='center', va='center')
+            plt.text(3, 2, confusion_matrix_norm[2,3], color='red', ha='center', va='center')
+        if restrict == "ood":
+            plt.text(1, 0, confusion_matrix_norm[0,1], color='green', ha='center', va='center')
+            plt.text(2, 0, confusion_matrix_norm[0,2], color='green', ha='center', va='center')
+            plt.text(3, 0, confusion_matrix_norm[0,3], color='green', ha='center', va='center')
+            plt.text(2, 3, confusion_matrix_norm[3,2], color='green', ha='center', va='center')
+            plt.text(3, 2, confusion_matrix_norm[2,3], color='green', ha='center', va='center')
+        if args.save_fig:
+            if args.test_whole:
+                plt.savefig(f'{FILE_DIR}/results/{args.model_type}/cm_norm_test_whole_{args.restrict}_restrict_{args.test_type}_nomask{args.no_mask}.jpg', bbox_inches = 'tight')
+            else:
+                plt.savefig(f'{FILE_DIR}/results/{args.model_type}/cm_norm_not_test_whole_{args.restrict}_restrict_{args.test_type}_nomask{args.no_mask}.jpg', bbox_inches = 'tight')
+        plt.close()
+        
 
