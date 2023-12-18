@@ -15,13 +15,14 @@ def send_intention_to_ros(intention):
     # rospy.loginfo(intention)
     # pub.publish(intention)
 
-def send_command_to_ros(command="stop"):
+def send_command_to_ros(command="stop",count=0):
     pub = rospy.Publisher('chatter', String, queue_size=10)
+    command = f"{command}_{count}"
     rospy.init_node('command', anonymous=True)
     rospy.loginfo(command)
-    # rate = rospy.Rate(10) # 10hz
+    rate = rospy.Rate(10) # 10hz
     pub.publish(command)
-    time.sleep(0.1)
+    rate.sleep()
     rospy.loginfo(command)
     pub.publish(command)
 
@@ -37,6 +38,8 @@ if __name__ == '__main__':
                     help="intention send to rospy")
     parser.add_argument('--command', type=str,
                     help="command send to rospy")
+    parser.add_argument('--index', type=int,
+                    help="command index")
     parser.add_argument('--action', type=str,
                     help="action send to rospy")
     args = parser.parse_args()
@@ -44,7 +47,7 @@ if __name__ == '__main__':
     if args.intention:
         send_intention_to_ros(args.intention)
     if args.command:
-        send_command_to_ros(args.command)
+        send_command_to_ros(args.command,args.index)
     if args.action:
         send_action_to_ros(args.action)
     

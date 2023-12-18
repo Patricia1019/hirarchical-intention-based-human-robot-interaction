@@ -79,7 +79,7 @@ if __name__ == '__main__':
     for key,value in INTENTION_LIST.items():
         acc_list[key] = []
     acc_list["all"] = []
-    confusion_matrix = []
+    confusion_matrix_norm = []
     for i in range(repeat_num):
         dataset = MyDataset(JSON_FILE,ROOT_DIR,args,dataset_type=args.test_type,world_pose=args.pose_world)
         dataloader = DataLoader(dataset, batch_size=1, shuffle=True)
@@ -106,10 +106,10 @@ if __name__ == '__main__':
 
         intention_list = np.array(intention_list)
         labels_list = np.array(labels_list)
-        if len(confusion_matrix)>0:
-            confusion_matrix += metrics.confusion_matrix(labels_list,intention_list)
+        if len(confusion_matrix_norm)>0:
+            confusion_matrix_norm += metrics.confusion_matrix(labels_list,intention_list,normalize='true')
         else:
-            confusion_matrix = metrics.confusion_matrix(labels_list,intention_list)
+            confusion_matrix_norm = metrics.confusion_matrix(labels_list,intention_list,normalize='true')
 
         count = count / len(dataset)
         print(f"length of dataset:{len(dataset)}")
@@ -128,7 +128,7 @@ if __name__ == '__main__':
         acc_list[key] = compute_mean_and_conf_interval(value)
     print(acc_list)
 
-    confusion_matrix_norm = metrics.confusion_matrix(labels_list,intention_list,normalize='true')
+    confusion_matrix_norm = confusion_matrix_norm / repeat_num
     cm_display_norm_display = metrics.ConfusionMatrixDisplay(confusion_matrix = confusion_matrix_norm, display_labels = ["no_action","connectors","screws","wheels"])
     cm_display_norm_display.plot(ax=plt.gca())
     # plt.text(3, 0, np.round(confusion_matrix_norm[0,3],4), color='red', ha='center', va='center')

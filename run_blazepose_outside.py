@@ -298,7 +298,7 @@ def intention_sender(args):
                             # pdb.set_trace()
                             pred_traj,pred_intention = Predictor.predict(inputs,args.restrict)
                             intention = get_intention(pred_intention)
-                            cv2.putText(masked_frame, f"intention:{intention}", (2, frame.shape[0] - 52), cv2.FONT_HERSHEY_TRIPLEX, 0.4, (255,255,255))
+                            # cv2.putText(masked_frame, f"intention:{intention}", (2, frame.shape[0] - 52), cv2.FONT_HERSHEY_TRIPLEX, 0.4, (255,255,255))
 
 
                         # intention prediction based on naive coordinates changes
@@ -335,7 +335,7 @@ def intention_sender(args):
                                 if intention != old_intention and intention == intention_queue[-1] and intention != "no_action":
                                     if intention == "get_connectors":
                                         if args.outer_restrict == 'working_area':
-                                            if righthand_xpose < -22: 
+                                            if righthand_xpose < -40: 
                                                 send_intention_to_ros(intention)
                                                 old_intention = intention
                                         else:

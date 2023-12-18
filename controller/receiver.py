@@ -47,7 +47,13 @@ class PlanGraph:
             self.action_history = ["get_short_tubes","get_long_tubes","get_short_tubes","get_long_tubes"]
             self.stage_record = {"bottom":["get_short_tubes","get_long_tubes","get_short_tubes","get_long_tubes"],"four_tubes":[],"top":[]}
             self.stage_history = ["bottom"]
-
+        if args.user_spin:
+            self.tube_count = {"short":2,"long":2}
+            self.screw_count = {"bottom":0,"four_tubes":0,"top":0}
+            self.action_history = ["get_short_tubes","get_long_tubes","get_short_tubes","get_long_tubes"]
+            self.stage_record = {"bottom":["get_short_tubes","get_long_tubes","get_short_tubes","get_long_tubes"],"four_tubes":[],"top":[]}
+            self.stage_history = ["bottom"]
+            
 class Receiver:
     def __init__(self,args):
         self.intention_list = []
@@ -688,6 +694,8 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--stageI_done', action="store_true",
                     help="whether to set stage I as done")
+    parser.add_argument('--user_spin', action="store_true",
+                    help="user study on spin")
     args = parser.parse_args()
     listener(args)
     # print("ok")
