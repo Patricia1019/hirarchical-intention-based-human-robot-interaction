@@ -217,7 +217,7 @@ class Receiver:
             if unique_index <= index:
                 unique_actions[index-unique_index] = []
                 for unique_action in ori_unique_actions[unique_index]:
-                    if "wait" not in unique_action:
+                    if "wait" not in unique_action and "force_triggered" not in unique_action:
                         # pdb.set_trace()
                         unique_actions[index-unique_index].append(self.REVERT_LIST[unique_action])
 
@@ -278,7 +278,7 @@ class Receiver:
             if unique_index <= index:
                 unique_actions[index-unique_index] = []
                 for unique_action in ori_unique_actions[unique_index]:
-                    if "wait" not in unique_action:
+                    if "wait" not in unique_action and "force_triggered" not in unique_action:
                         # pdb.set_trace()
                         unique_actions[index-unique_index].append(self.REVERT_LIST[unique_action])
 
