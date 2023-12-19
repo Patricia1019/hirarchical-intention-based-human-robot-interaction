@@ -76,12 +76,12 @@ os.environ["DISPLAY"]=":0"
 #        label='Confidence+Working Area Restriction')
 
 labels = ['No', 'Confidence', 'Confidence+Working Area']
-error1_means = np.array([0.57,0.30,0])
-error2_means = np.array([0.04,0.01,0])
-error3_means = np.array([0.03,0.08,0.12])
-error1_std = np.array([0.02,0.01,0])
-error2_std = np.array([0.01,0.005,0])
-error3_std = np.array([0.005,0.01,0.01])
+error1_means = np.array([0.57,0.30,0])/4
+error2_means = np.array([0.04,0.01,0])/4
+error3_means = np.array([0.03,0.08,0.12])/4
+error1_std = np.array([0.02,0.01,0])/4
+error2_std = np.array([0.01,0.005,0])/4
+error3_std = np.array([0.005,0.01,0.01])/4
 width = 0.50      # the width of the bars: can also be len(x) sequence
 
 fig, ax = plt.subplots()
