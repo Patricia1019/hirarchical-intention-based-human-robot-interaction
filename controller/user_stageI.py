@@ -370,13 +370,16 @@ class Receiver:
 
     def decide_send_action(self,data):
         # TODO
-        if data == "get_connectors": # get the same tube as it lastly got
-            if len(self.tube_record) == 0:
+        REVERT_TUBE = {"get_short_tubes":"long","get_long_tubes":"short"}
+        if data == "get_connectors": # decide to get short tubes or get long tubes
+            for key in REVERT_TUBE.keys():
+                if self.tube_record.count(key) == 2:
+                    return [f"get_{REVERT_TUBE[key]}_tubes",self.tube_count[REVERT_TUBE[key]]]
+            if len(self.tube_record) > 0:
+                last_tube = self.tube_record[-1]
+                tube_key = REVERT_TUBE[last_tube]
+            else:
                 tube_key = "short"
-            elif "short" in self.tube_record[-1]:
-                tube_key = "short"
-            elif "long" in self.tube_record[-1]:
-                tube_key = "long"
             return [f"get_{tube_key}_tubes",self.tube_count[tube_key]]
 
         if data == "short":

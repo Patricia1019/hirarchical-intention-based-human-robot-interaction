@@ -86,11 +86,21 @@ class Receiver:
                 self.intention_list.pop(-1)
             if not self.executing and self.command:
                 old_command = self.command
-                action = self.decide_send_action(self.command)
-                if action[0]:
-                    print(action)
-                    self.command = None
-                    self.execute_action(action)
+                if self.command == "short" and args.multimodal:
+                    print("multimodal")
+                    get_num = 4 
+                    for _ in range(get_num):
+                        action = self.decide_send_action(old_command)
+                        if action[0]:
+                            print(action)
+                            self.command = None
+                            self.execute_action(action)
+                else:
+                    action = self.decide_send_action(self.command)
+                    if action[0]:
+                        print(action)
+                        self.command = None
+                        self.execute_action(action)
         
     def execute_action(self,action,index=0):
         waypoints_list,target_list,unique_actions = self.generate_waypoints(action)
@@ -330,77 +340,6 @@ class Receiver:
             speed = [0.7] * len(target_list)
             speed[-1] = 0
 
-        if action[0] == "get_long_tubes":
-            retract = RETRACT_POSITION
-            ready = (0.2,0.32,0.35,0,-0.7,-0.7,0)
-            # ready_way = (0.2,0.32+0.18,0.19,0,-0.7,-0.7,0)
-            x_interval = 0.10
-            col = action[1]
-            base = BASE
-            get = (-0.28-x_interval*col,-0.04,0.3,0,-0.7,-0.7,0)
-            grip = (-0.28-x_interval*col,-0.04,0.15,0,-0.7,-0.7,0)
-            base_long = (-0.18,-0.04,0.3,0,-0.7,-0.7,0)
-            deliver = (0.3,0.3,0.35,0,-0.7,-0.6,-0.2) # TODO: move with hand
-            # target_list = [retract,ready,base,get,grip,get,base_long,base,ready,deliver,ready,retract]
-            # unique_actions = {5:["grip"],10:["force_triggered"]}
-            target_list = [ready,base,get,grip,get,base_long,base,ready,deliver,ready]
-            unique_actions = {target_list.index(grip)+1:["grip"],target_list.index(deliver)+1:["force_triggered"]}
-            speed = [0.7] * len(target_list)
-            speed[-1] = 0
-
-        if action[0] == "spin_bottom":
-            retract = RETRACT_POSITION
-            pre_ready = (0.58,0.25,0.19,0,-0.7,-0.7,0)
-            ready = (0.58,0.25,0.19,0,0,1,0)
-            grip = (0.58,0.25,-0.085,0,0,1,0)
-            middle_spin = (0.48,0.06,-0.085,0,1,1,0)
-            spin = (0.4,0.27,-0.085,0,1,0,0)
-            spin_final = (0.5,0.27,-0.085,0,1,-1,0)
-            grip_final = (.48,0.06,-0.085,0,1,-1,0)
-            up = (0.5,0.27,0.19,0,1,-1,0)
-            back = (0.48,0.05,0.19,0,1,0,0)
-            if action[1] % 4 == 0:
-                target_list = [ready,grip]
-                unique_actions = {target_list.index(grip)+1:["grip"]}
-                speed = [0.7] * len(target_list)
-            elif action[1] % 4 == 1:
-                target_list = [middle_spin]
-                unique_actions = {}
-                speed = [0.7] * len(target_list)
-                speed[-1] = 0
-            elif action[1] % 4 == 2:
-                target_list = [spin]
-                unique_actions = {}
-                speed = [0.7] * len(target_list)
-                speed[-1] = 0
-            elif action[1] % 4 == 3:
-                target_list = [spin_final,back,retract]
-                unique_actions = {target_list.index(spin_final)+1:["wait20","open"]}
-                speed = [0.7] * len(target_list)  
-                speed[-2] = 0
-                speed[-1] = 0
-
-        if action[0] == "lift_up":
-            retract = RETRACT_POSITION
-            up = (0.5,0.27,0.17,0,1,1,0)
-            init_grip = (0.5,0.27,0.09,0,1,1,0)
-            spin = (0.48,0.06,0.18,0,1,-1,0)
-            ready = (0.5,0.27,0.18,0,1,-1,0)
-            grip = (0.5,0.27,0.09,0,1,-1,0)
-            up2 = (0.5,0.27,0.17,0,1,-1,0)
-            back = (0.48,0.05,0.19,0,1,0,0)
-            if action[1] == 0:
-                target_list = [up,init_grip,up]
-                unique_actions = {target_list.index(init_grip)+1:["grip"]}
-                speed = [0.7] * len(target_list)
-            elif action[1] == 1:
-                target_list = [spin,ready,grip,up2,back,retract]
-                unique_actions = {target_list.index(spin)+1:["open"],target_list.index(grip)+1:["grip"],target_list.index(up2)+1:["wait20","open"]}
-                speed = [0.7] * len(target_list)
-                speed[0] = 0
-                speed[-2] = 0
-                speed[-1] = 0
-
         waypoints_list = []
         for i in range(len(target_list)):
             if i == 0:
@@ -477,6 +416,8 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--stageI_done', action="store_true",
                     help="whether to set stage I as done")
+    parser.add_argument('--multimodal',action="store_true",
+                    help="whether test on multimodal method")
     args = parser.parse_args()
     listener(args)
     # print("ok")
