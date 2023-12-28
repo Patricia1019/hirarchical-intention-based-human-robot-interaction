@@ -188,6 +188,8 @@ def intention_sender(args):
     frame_count = 0
     traj_queue = []
     intention_queue = []
+    righthand_queue = []
+    lefthand_queue = []
     Predictor = IntentionPredictor(model_type=args.model_type)
     old_upperbody = 0
     old_intention = None
@@ -325,17 +327,24 @@ def intention_sender(args):
                             if len(intention_queue) < send_window:
                                 if len(intention_queue) == 0:
                                     intention_queue.append(intention)
+                                    righthand_queue.append(righthand_xpose)
+                                    lefthand_queue.append(lefthand_xpose)
                                 else:
                                     if intention == intention_queue[-1]:
                                         intention_queue.append(intention)
+                                        righthand_queue.append(righthand_xpose)
+                                        lefthand_queue.append(lefthand_xpose)
                                     else:
                                         intention_queue = []
+                                        righthand_queue = []
+                                        lefthand_queue = []
                                         old_intention = "no_action"
                             else:
                                 if intention != old_intention and intention == intention_queue[-1] and intention != "no_action":
                                     if intention == "get_connectors":
                                         if args.outer_restrict == 'working_area':
-                                            if righthand_xpose < -40: 
+                                            # if righthand_xpose < -40: 
+                                            if min(righthand_queue) < -35:
                                                 send_intention_to_ros(intention)
                                                 old_intention = intention
                                         else:
@@ -343,7 +352,8 @@ def intention_sender(args):
                                             old_intention = intention
                                     elif intention == "get_screws":
                                         if args.outer_restrict == 'working_area':
-                                            if righthand_xpose > 100 or lefthand_xpose > 100: 
+                                            # if righthand_xpose > 100 or lefthand_xpose > 100: 
+                                            if max(righthand_queue) > 80 or max(lefthand_queue) > 80: 
                                                 send_intention_to_ros(intention)
                                                 old_intention = intention
                                         else:
@@ -351,7 +361,7 @@ def intention_sender(args):
                                             old_intention = intention
                                     elif intention == "get_wheels":
                                         if args.outer_restrict == 'working_area':
-                                            if righthand_xpose > 100 or lefthand_xpose > 100: 
+                                            if max(righthand_queue) > 100 or max(lefthand_queue) > 100: 
                                                 send_intention_to_ros(intention)
                                                 old_intention = intention
                                         else:
