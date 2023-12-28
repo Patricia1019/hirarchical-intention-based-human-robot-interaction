@@ -370,7 +370,7 @@ class Receiver:
             self.screw_count += 1
             if self.screw_count % 4 == 1:
                 return ["spin_bottom",self.action_history.count("spin_bottom")]
-            if self.screw_count % 4 == 3:
+            if self.screw_count % 4 == 2:
                 self.screw_count = 1
                 return ["spin_bottom",self.action_history.count("spin_bottom")]
 

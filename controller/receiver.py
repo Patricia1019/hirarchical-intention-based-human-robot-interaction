@@ -95,13 +95,16 @@ class Receiver:
                 print(action)
                 self.intention_list.append(data.data)
                 self.execute_action(action)
-        if split_data in COMMAND_LIST and data.data != self.old_command_data:
-            # self.command_list.append(data.data)
+        if split_data in COMMAND_LIST and data.data not in self.command_list:
+            self.command_list.append(data.data)
             self.command = split_data
             self.old_command_data = data.data
             # print(data.data)
             if self.command == "stop" and self.executing:
-                self.intention_list.pop(-1)
+                try:
+                    self.intention_list.pop(-1)
+                except:
+                    pass
             if not self.executing and self.command:
                 old_command = self.command
                 if self.command == "short":
@@ -144,21 +147,25 @@ class Receiver:
             command = self.command
             # pdb.set_trace()
             if command == "stop":
-                print(command)
-                self.retract(current_pose,target_list,unique_actions,i)
-                self.command = None
-                # kinova_control_msg.pose = ComposePoseFromTransQuat(current_pose)
-                # kinova_control_pub.publish(kinova_control_msg)
-                break
-            if command in ["long","short"] and command not in action:
-                print(command)
-                action = self.decide_send_action(command)
-                if action:
+                DELIVER_INDEX = len(waypoints_list) - 2
+                if i < DELIVER_INDEX:
+                    print(command)
+                    self.retract(current_pose,target_list,unique_actions,i)
                     self.command = None
-                    BASE_INDEX = 1
-                    self.return_base(current_pose,target_list,unique_actions,i,BASE_INDEX)
-                    self.execute_action(action,BASE_INDEX+1)
+                    # kinova_control_msg.pose = ComposePoseFromTransQuat(current_pose)
+                    # kinova_control_pub.publish(kinova_control_msg)
                     break
+            if command in ["long","short"] and command not in action:
+                DELIVER_INDEX = len(waypoints_list) - 2
+                if i < DELIVER_INDEX:
+                    print(command)
+                    action = self.decide_send_action(command)
+                    if action:
+                        self.command = None
+                        BASE_INDEX = 1
+                        self.return_base(current_pose,target_list,unique_actions,i,BASE_INDEX)
+                        self.execute_action(action,BASE_INDEX+1)
+                        break
 
             if self.reached(current_pose,target_list[i]):
                 i += 1
