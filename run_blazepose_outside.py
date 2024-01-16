@@ -211,7 +211,7 @@ def intention_sender(args):
             send_flag = 0
             for detection in detections:
                 if detection.label == 15 and detection.confidence > 0.6 and \
-                    get_distance(detection) < 2100: # TODO
+                    get_distance(detection) < 2500: # TODO
                         send_flag = 1
                         if detection.spatialCoordinates.z < nearest_dist:
                             nearest_dist = detection.spatialCoordinates.z
@@ -274,113 +274,115 @@ def intention_sender(args):
 
                     # save trajectory
                     if body:
-                        frame_count += 1
-                        cv2.putText(masked_frame, "frame: {:.2f}".format(frame_count), (2, frame.shape[0] - 20), cv2.FONT_HERSHEY_TRIPLEX, 0.4, (255,255,255))
-                        landmarks = body.landmarks_world
-                        righthand = landmarks[16]
-                        rightelbow = landmarks[14]
-                        rightshoulder = landmarks[12]
-                        lefthand = landmarks[15]
-                        # upperbody = np.concatenate((landmarks[11:25,:],landmarks[0:1,:]),axis=0)
-                        upperbody = body.landmarks
-                        if len(traj_queue) < frame_size:
-                            traj_queue.append(upperbody)
-                        else:
-                            traj_queue.pop(0)
-                            traj_queue.append(upperbody)
-                        assert len(traj_queue) <= frame_size, "the length of accumulated traj is longer than intention prediction frame size!"
-                        # intention prediction based on learning 
-                        intention = None
-                        if len(traj_queue)==frame_size: # send to intention prediction module
-                            poses = np.array(traj_queue)
-                            poses_norm = 2*(poses-poses.min())/(poses.max()-poses.min())
-                            poses_world = camera_to_world(poses_norm)
-                            poses_world[:, :, 2] -= np.min(poses_world[:, :, 2])
-                            inputs = torch.tensor(poses_world.reshape(1,frame_size,-1)).float()
-                            # pdb.set_trace()
-                            pred_traj,pred_intention = Predictor.predict(inputs,args.restrict)
-                            intention = get_intention(pred_intention)
-                            # cv2.putText(masked_frame, f"intention:{intention}", (2, frame.shape[0] - 52), cv2.FONT_HERSHEY_TRIPLEX, 0.4, (255,255,255))
+                        try:
+                            frame_count += 1
+                            cv2.putText(masked_frame, "frame: {:.2f}".format(frame_count), (2, frame.shape[0] - 20), cv2.FONT_HERSHEY_TRIPLEX, 0.4, (255,255,255))
+                            landmarks = body.landmarks_world
+                            righthand = landmarks[16]
+                            rightelbow = landmarks[14]
+                            rightshoulder = landmarks[12]
+                            lefthand = landmarks[15]
+                            # upperbody = np.concatenate((landmarks[11:25,:],landmarks[0:1,:]),axis=0)
+                            upperbody = body.landmarks
+                            if len(traj_queue) < frame_size:
+                                traj_queue.append(upperbody)
+                            else:
+                                traj_queue.pop(0)
+                                traj_queue.append(upperbody)
+                            assert len(traj_queue) <= frame_size, "the length of accumulated traj is longer than intention prediction frame size!"
+                            # intention prediction based on learning 
+                            intention = None
+                            if len(traj_queue)==frame_size: # send to intention prediction module
+                                poses = np.array(traj_queue)
+                                poses_norm = 2*(poses-poses.min())/(poses.max()-poses.min())
+                                poses_world = camera_to_world(poses_norm)
+                                poses_world[:, :, 2] -= np.min(poses_world[:, :, 2])
+                                inputs = torch.tensor(poses_world.reshape(1,frame_size,-1)).float()
+                                # pdb.set_trace()
+                                pred_traj,pred_intention = Predictor.predict(inputs,args.restrict)
+                                intention = get_intention(pred_intention)
+                                # cv2.putText(masked_frame, f"intention:{intention}", (2, frame.shape[0] - 52), cv2.FONT_HERSHEY_TRIPLEX, 0.4, (255,255,255))
 
 
-                        # intention prediction based on naive coordinates changes
-                        # if righthand[0] < -0.5:
-                        #     intention = "get long tubes"
-                        # elif righthand[0] > 0.3:
-                        #     intention = "get short tubes"
-                        # elif len(traj_queue)==frame_size:
-                        #     change = 0
-                        #     for i in range(frame_size-1):
-                        #         change += abs(traj_queue[i+1]-traj_queue[i]).sum()
-                        #     if change < 1:
-                        #         intention = "waiting"
-                        #     else:
-                        #         intention = ""
-                        # else:
-                        #     intention = ""
-                        # old_upperbody = upperbody
-                        righthand_pose = body.xyz/10 + righthand*100
-                        righthand_xpose = body.xyz[0]/10 + righthand[0]*100
-                        lefthand_pose = body.xyz/10 + lefthand*100
-                        lefthand_xpose = body.xyz[0]/10 + lefthand[0]*100
-                        if intention:
-                            if len(intention_queue) < send_window:
-                                if len(intention_queue) == 0:
-                                    intention_queue.append(intention)
-                                    righthand_queue.append(righthand_xpose)
-                                    lefthand_queue.append(lefthand_xpose)
-                                else:
-                                    if intention == intention_queue[-1]:
+                            # intention prediction based on naive coordinates changes
+                            # if righthand[0] < -0.5:
+                            #     intention = "get long tubes"
+                            # elif righthand[0] > 0.3:
+                            #     intention = "get short tubes"
+                            # elif len(traj_queue)==frame_size:
+                            #     change = 0
+                            #     for i in range(frame_size-1):
+                            #         change += abs(traj_queue[i+1]-traj_queue[i]).sum()
+                            #     if change < 1:
+                            #         intention = "waiting"
+                            #     else:
+                            #         intention = ""
+                            # else:
+                            #     intention = ""
+                            # old_upperbody = upperbody
+                            righthand_pose = body.xyz/10 + righthand*100
+                            righthand_xpose = body.xyz[0]/10 + righthand[0]*100
+                            lefthand_pose = body.xyz/10 + lefthand*100
+                            lefthand_xpose = body.xyz[0]/10 + lefthand[0]*100
+                            if intention:
+                                if len(intention_queue) < send_window:
+                                    if len(intention_queue) == 0:
                                         intention_queue.append(intention)
                                         righthand_queue.append(righthand_xpose)
                                         lefthand_queue.append(lefthand_xpose)
                                     else:
-                                        intention_queue = []
-                                        righthand_queue = []
-                                        lefthand_queue = []
-                                        old_intention = "no_action"
-                            else:
-                                if intention != old_intention and intention == intention_queue[-1] and intention != "no_action":
-                                    if intention == "get_connectors":
-                                        if args.outer_restrict == 'working_area':
-                                            # if righthand_xpose < -40: 
-                                            if min(righthand_queue) < -35:
-                                                send_intention_to_ros(intention)
-                                                old_intention = intention
+                                        if intention == intention_queue[-1]:
+                                            intention_queue.append(intention)
+                                            righthand_queue.append(righthand_xpose)
+                                            lefthand_queue.append(lefthand_xpose)
                                         else:
-                                            send_intention_to_ros(intention)
-                                            old_intention = intention
-                                    elif intention == "get_screws":
-                                        if args.outer_restrict == 'working_area':
-                                            # if righthand_xpose > 100 or lefthand_xpose > 100: 
-                                            if max(righthand_queue) > 80 or max(lefthand_queue) > 80: 
-                                                send_intention_to_ros(intention)
-                                                old_intention = intention
-                                        else:
-                                            send_intention_to_ros(intention)
-                                            old_intention = intention
-                                    elif intention == "get_wheels":
-                                        if args.outer_restrict == 'working_area':
-                                            if max(righthand_queue) > 100 or max(lefthand_queue) > 100: 
-                                                send_intention_to_ros(intention)
-                                                old_intention = intention
-                                        else:
-                                            send_intention_to_ros(intention)
-                                            old_intention = intention
+                                            intention_queue = []
+                                            righthand_queue = []
+                                            lefthand_queue = []
+                                            old_intention = "no_action"
                                 else:
-                                    old_intention = intention
-                                intention_queue = []
+                                    if intention != old_intention and intention == intention_queue[-1] and intention != "no_action":
+                                        if intention == "get_connectors":
+                                            if args.outer_restrict == 'working_area':
+                                                # if righthand_xpose < -40: 
+                                                if min(righthand_queue) < -30:
+                                                    send_intention_to_ros(intention)
+                                                    old_intention = intention
+                                            else:
+                                                send_intention_to_ros(intention)
+                                                old_intention = intention
+                                        elif intention == "get_screws":
+                                            if args.outer_restrict == 'working_area':
+                                                # if righthand_xpose > 100 or lefthand_xpose > 100: 
+                                                if max(righthand_queue) > 70 or max(lefthand_queue) > 70: 
+                                                    send_intention_to_ros(intention)
+                                                    old_intention = intention
+                                            else:
+                                                send_intention_to_ros(intention)
+                                                old_intention = intention
+                                        elif intention == "get_wheels":
+                                            if args.outer_restrict == 'working_area':
+                                                if max(righthand_queue) > 100 or max(lefthand_queue) > 100: 
+                                                    send_intention_to_ros(intention)
+                                                    old_intention = intention
+                                            else:
+                                                send_intention_to_ros(intention)
+                                                old_intention = intention
+                                    else:
+                                        old_intention = intention
+                                    intention_queue = []
 
 
-                        cv2.putText(masked_frame, f"intention:{intention}", (2, frame.shape[0] - 68), cv2.FONT_HERSHEY_TRIPLEX, 0.4, (255,255,255))
-                        cv2.putText(masked_frame, "right hand x: {:.2f}, y: {:.2f}, z: {:.2f}".format(righthand_pose[0],righthand_pose[1],righthand_pose[2]), (2, frame.shape[0] - 52), cv2.FONT_HERSHEY_TRIPLEX, 0.4, (255,255,255))
-                        cv2.putText(masked_frame, "left hand x: {:.2f}, y: {:.2f}, z: {:.2f}".format(lefthand_pose[0],lefthand_pose[1],lefthand_pose[2]), (2, frame.shape[0] - 36), cv2.FONT_HERSHEY_TRIPLEX, 0.4, (255,255,255))
-                        traj.append(body)
-                        if not video:
-                            cv2.imwrite(f'{ROOT_DIR}/images{task[-3:]}/{frame_count}.png',masked_frame)
-                        else:
-                            video_out.write(masked_frame)
-                    
+                            cv2.putText(masked_frame, f"intention:{intention}", (2, frame.shape[0] - 68), cv2.FONT_HERSHEY_TRIPLEX, 0.4, (255,255,255))
+                            cv2.putText(masked_frame, "right hand x: {:.2f}, y: {:.2f}, z: {:.2f}".format(righthand_pose[0],righthand_pose[1],righthand_pose[2]), (2, frame.shape[0] - 52), cv2.FONT_HERSHEY_TRIPLEX, 0.4, (255,255,255))
+                            cv2.putText(masked_frame, "left hand x: {:.2f}, y: {:.2f}, z: {:.2f}".format(lefthand_pose[0],lefthand_pose[1],lefthand_pose[2]), (2, frame.shape[0] - 36), cv2.FONT_HERSHEY_TRIPLEX, 0.4, (255,255,255))
+                            traj.append(body)
+                            if not video:
+                                cv2.imwrite(f'{ROOT_DIR}/images{task[-3:]}/{frame_count}.png',masked_frame)
+                            else:
+                                video_out.write(masked_frame)
+                        except:
+                            pass
                     if show:
                         cv2.imshow("preview", masked_frame)
 

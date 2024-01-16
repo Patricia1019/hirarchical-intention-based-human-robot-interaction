@@ -339,7 +339,7 @@ class Receiver:
                 speed[-1] = 0
             elif action[1] % 4 == 3:
                 target_list = [spin_final,back,retract]
-                unique_actions = {target_list.index(spin_final)+1:["wait20","open"]}
+                unique_actions = {target_list.index(spin_final)+1:["wait10","open"]}
                 speed = [0.7] * len(target_list)  
                 speed[-2] = 0
                 speed[-1] = 0
@@ -374,7 +374,7 @@ class Receiver:
                 self.screw_count = 1
                 return ["spin_bottom",self.action_history.count("spin_bottom")]
 
-        if data == "spin":
+        if data == "spin" or data == "short":
             self.screw_count = 1
             return ["spin_bottom",self.action_history.count("spin_bottom")]
 
