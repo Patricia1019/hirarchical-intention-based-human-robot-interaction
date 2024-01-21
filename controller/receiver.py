@@ -573,20 +573,14 @@ class Receiver:
                 data = "get_wheels"
             elif self.plangraph.stage_history[-1] == "bottom":
                 stage = "bottom"
-                self.plangraph.screw_count[stage] += 1
-                if self.plangraph.screw_count[stage] == 1:
-                    return ["spin_bottom",self.plangraph.action_history.count("spin_bottom")]
-                if self.plangraph.screw_count[stage] == 2:
-                    self.plangraph.screw_count[stage] = 1
+                if self.plangraph.screw_count[stage] < 4:
+                    self.plangraph.screw_count[stage] += 1
                     return ["spin_bottom",self.plangraph.action_history.count("spin_bottom")]
             elif self.plangraph.stage_history[-1] == "four_tubes":
                 stage = "four_tubes"
-                self.plangraph.screw_count[stage] += 1
-                if len(self.plangraph.stage_history) == 3:
-                    if self.plangraph.screw_count[stage] == 1:
-                        return ["spin_four_tubes",self.plangraph.action_history.count("spin_four_tubes")]
-                    if self.plangraph.screw_count[stage] == 3:
-                        self.plangraph.screw_count[stage] = 1
+                if self.plangraph.screw_count[stage] < 4 and len(self.plangraph.stage_history) == 3:
+                    self.plangraph.screw_count[stage] += 1
+                    if self.plangraph.screw_count[stage] == 1 or self.plangraph.screw_count[stage] == 3:
                         return ["spin_four_tubes",self.plangraph.action_history.count("spin_four_tubes")]
                 # elif len(self.plangraph.stage_history) == 2 and self.plangraph.screw_count[stage] == 3:
                 #     self.plangraph.screw_count[stage] = 1
@@ -594,20 +588,15 @@ class Receiver:
             elif self.plangraph.stage_history[-1] == "top":
                 if len(self.plangraph.stage_history) == 2:
                     stage = "top"
-                    self.plangraph.screw_count[stage] += 1
-                    if self.plangraph.screw_count[stage] == 1:
-                        return ["spin_bottom",self.plangraph.action_history.count("spin_bottom")]
-                    if self.plangraph.screw_count[stage] == 2:
-                        self.plangraph.screw_count[stage] = 1
+                    if self.plangraph.screw_count[stage] < 4:
+                        self.plangraph.screw_count[stage] += 1
                         return ["spin_bottom",self.plangraph.action_history.count("spin_bottom")]
                 elif len(self.plangraph.stage_history) == 3:
                     stage = "top"
-                    self.plangraph.screw_count[stage] += 1
-                    if self.plangraph.screw_count[stage] == 1:
-                        return ["spin_top",self.plangraph.action_history.count("spin_top")]
-                    if self.plangraph.screw_count[stage] == 3:
-                        self.plangraph.screw_count[stage] = 1
-                        return ["spin_top",self.plangraph.action_history.count("spin_top")]
+                    if self.plangraph.screw_count[stage] < 8:
+                        self.plangraph.screw_count[stage] += 1
+                        if self.plangraph.screw_count[stage] % 4 == 1 or self.plangraph.screw_count[stage] % 4 == 3:
+                            return ["spin_top",self.plangraph.action_history.count("spin_top")]
 
         if data == "get_wheels" and self.plangraph.stage_history:
             self.plangraph.wheels_count += 1
