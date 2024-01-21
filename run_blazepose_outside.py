@@ -345,7 +345,7 @@ def intention_sender(args):
                                         if intention == "get_connectors":
                                             if args.outer_restrict == 'working_area':
                                                 # if righthand_xpose < -40: 
-                                                if min(righthand_queue) < -30:
+                                                if min(righthand_queue) < -33:
                                                     send_intention_to_ros(intention)
                                                     old_intention = intention
                                             else:
@@ -354,7 +354,7 @@ def intention_sender(args):
                                         elif intention == "get_screws":
                                             if args.outer_restrict == 'working_area':
                                                 # if righthand_xpose > 100 or lefthand_xpose > 100: 
-                                                if max(righthand_queue) > 70 or max(lefthand_queue) > 70: 
+                                                if max(righthand_queue) > 80 or max(lefthand_queue) > 80: 
                                                     send_intention_to_ros(intention)
                                                     old_intention = intention
                                             else:

@@ -12,7 +12,7 @@ import pdb
 sys.path.append(f'{FILE_DIR}/../traj_intention')
 from Dataset import INTENTION_LIST
 # from speech import COMMAND_LIST
-COMMAND_LIST = ["stop","short","long","spin","lift"]
+COMMAND_LIST = ["stop","short","long","get up","spin","rotate"]
 
 
 RETRACT_POSITION = (0.2,0,0.19,0,-0.7,-0.7,0)
@@ -89,13 +89,13 @@ class Receiver:
                 print(action)
                 self.execute_action(action)
 
-        if data.data in INTENTION_LIST:
+        elif data.data in INTENTION_LIST:
             action = self.decide_send_action(data.data)
             if action[0] and not self.executing:
                 print(action)
                 self.intention_list.append(data.data)
                 self.execute_action(action)
-        if split_data in COMMAND_LIST and data.data not in self.command_list:
+        elif split_data in COMMAND_LIST and data.data not in self.command_list:
             self.command_list.append(data.data)
             self.command = split_data
             self.old_command_data = data.data
@@ -420,52 +420,33 @@ class Receiver:
                 speed[-1] = 0
             elif action[1] % 4 == 3:
                 target_list = [spin_final,back,retract]
-                unique_actions = {target_list.index(spin_final)+1:["wait20","open"]}
+                unique_actions = {target_list.index(spin_final)+1:["wait10","open"]}
                 speed = [0.7] * len(target_list)  
                 speed[-2] = 0
                 speed[-1] = 0
 
         if action[0] == "spin_four_tubes":
+            # self.plangraph.stage_history = ["bottom","four_tubes","top"] # for debugging
             # self.plangraph.stage_history = ["bottom","top","four_tubes"] # for debugging
-            assert len(self.plangraph.stage_history) > 1, "spin_four_tubes should be executed after at least two stages have been done!"
-            if len(self.plangraph.stage_history) == 3:
-                retract = RETRACT_POSITION
-                pre_ready = (0.58,0.25,0.19,0,-0.7,-0.7,0)
-                ready = (0.58,0.25,0.19,0,0,1,0)
-                grip = (0.58,0.25,0.11,0,0,1,0)
-                middle_spin = (0.48,0.06,0.11,0,1,1,0)
-                spin = (0.4,0.27,0.11,0,1,0,0)
-                up = (0.4,0.27,0.19,0,1,0,0)
-                back = (0.48,0.05,0.19,0,1,0,0)
-                if action[1] == 0:
-                    target_list = [ready,grip]
-                    unique_actions = {target_list.index(grip)+1:["grip"]}
-                    speed = [0.7] * len(target_list)
-                elif action[1] == 1:
-                    target_list = [middle_spin,spin]
-                    unique_actions = {}
-                    speed = [0.7] * len(target_list)
-                    speed[1] = 0
-                    speed[-1] = 0
-            elif len(self.plangraph.stage_history) == 2:
-                retract = RETRACT_POSITION
-                pre_ready = (0.58,0.25,0.19,0,-0.7,-0.7,0)
-                ready = (0.58,0.25,0.19,0,0,1,0)
-                grip = (0.58,0.25,-0.085,0,0,1,0)
-                middle_spin = (0.48,0.06,-0.085,0,1,1,0)
-                spin = (0.4,0.27,-0.085,0,1,0,0)
-                up = (0.4,0.27,0.19,0,1,0,0)
-                back = (0.48,0.05,0.19,0,1,0,0)
-                if action[1] == 0:
-                    target_list = [ready,grip]
-                    unique_actions = {target_list.index(grip)+1:["grip"]}
-                    speed = [0.7] * len(target_list)
-                elif action[1] == 1:
-                    target_list = [middle_spin,spin,up,back,retract]
-                    unique_actions = {target_list.index(spin)+1:["wait20","open"]}
-                    speed = [0.7] * len(target_list)
-                    speed[1] = 0   
-                    speed[-1] = 0          
+            assert len(self.plangraph.stage_history) > 2, "spin_four_tubes should be executed after three stages have all been done!"
+            retract = RETRACT_POSITION
+            pre_ready = (0.58,0.25,0.19,0,-0.7,-0.7,0)
+            ready = (0.58,0.25,0.19,0,0,1,0)
+            grip = (0.58,0.25,0.11,0,0,1,0)
+            middle_spin = (0.48,0.06,0.11,0,1,1,0)
+            spin = (0.4,0.27,0.11,0,1,0,0)
+            up = (0.4,0.27,0.19,0,1,0,0)
+            back = (0.48,0.05,0.19,0,1,0,0)
+            if action[1] == 0:
+                target_list = [ready,grip]
+                unique_actions = {target_list.index(grip)+1:["grip"]}
+                speed = [0.7] * len(target_list)
+            elif action[1] == 1:
+                target_list = [middle_spin,spin,up,back,retract]
+                unique_actions = {target_list.index(spin)+1:["wait20","open"]}
+                speed = [0.7] * len(target_list)
+                speed[1] = 0   
+                speed[-1] = 0          
 
         if action[0] == "spin_top":
             retract = RETRACT_POSITION
@@ -499,11 +480,13 @@ class Receiver:
                 speed[0] = 0
 
         if action[0] == "lift_up":
+            # self.plangraph.stage_history = ["bottom","four_tubes","top"] # for debugging
+            self.plangraph.stage_history = ["bottom","top","four_tubes"] # for debugging
             if self.plangraph.stage_history[-1] == "top":
                 retract = RETRACT_POSITION
                 up = (0.5,0.27,0.17,0,1,-1,0)
                 spin = (0.48,0.06,0.18,0,1,1,0)
-                ready = (0.5,0.27,0.18,0,1,1,0)
+                ready = (0.5,0.27,0.23,0,1,1,0)
                 grip = (0.5,0.27,0.09,0,1,1,0)
                 up2 = (0.5,0.27,0.17,0,1,1,0)
                 if action[1] == 0:
@@ -521,7 +504,7 @@ class Receiver:
                 init_spin = (0.5,0.27,0.09,0,1,-1,0)
                 up = (0.5,0.27,0.17,0,1,-1,0)
                 spin = (0.48,0.06,0.17,0,1,1,0)
-                ready = (0.5,0.27,0.18,0,1,1,0)
+                ready = (0.5,0.27,0.23,0,1,1,0)
                 grip = (0.5,0.27,0.09,0,1,1,0)
                 up2 = (0.5,0.27,0.17,0,1,1,0)
                 if action[1] == 0:
@@ -593,7 +576,7 @@ class Receiver:
                 self.plangraph.screw_count[stage] += 1
                 if self.plangraph.screw_count[stage] == 1:
                     return ["spin_bottom",self.plangraph.action_history.count("spin_bottom")]
-                if self.plangraph.screw_count[stage] == 3:
+                if self.plangraph.screw_count[stage] == 2:
                     self.plangraph.screw_count[stage] = 1
                     return ["spin_bottom",self.plangraph.action_history.count("spin_bottom")]
             elif self.plangraph.stage_history[-1] == "four_tubes":
@@ -602,7 +585,7 @@ class Receiver:
                 if len(self.plangraph.stage_history) == 3:
                     if self.plangraph.screw_count[stage] == 1:
                         return ["spin_four_tubes",self.plangraph.action_history.count("spin_four_tubes")]
-                    if self.plangraph.screw_count[stage] == 5:
+                    if self.plangraph.screw_count[stage] == 3:
                         self.plangraph.screw_count[stage] = 1
                         return ["spin_four_tubes",self.plangraph.action_history.count("spin_four_tubes")]
                 # elif len(self.plangraph.stage_history) == 2 and self.plangraph.screw_count[stage] == 3:
@@ -614,7 +597,7 @@ class Receiver:
                     self.plangraph.screw_count[stage] += 1
                     if self.plangraph.screw_count[stage] == 1:
                         return ["spin_bottom",self.plangraph.action_history.count("spin_bottom")]
-                    if self.plangraph.screw_count[stage] == 3:
+                    if self.plangraph.screw_count[stage] == 2:
                         self.plangraph.screw_count[stage] = 1
                         return ["spin_bottom",self.plangraph.action_history.count("spin_bottom")]
                 elif len(self.plangraph.stage_history) == 3:
@@ -622,7 +605,7 @@ class Receiver:
                     self.plangraph.screw_count[stage] += 1
                     if self.plangraph.screw_count[stage] == 1:
                         return ["spin_top",self.plangraph.action_history.count("spin_top")]
-                    if self.plangraph.screw_count[stage] == 5:
+                    if self.plangraph.screw_count[stage] == 3:
                         self.plangraph.screw_count[stage] = 1
                         return ["spin_top",self.plangraph.action_history.count("spin_top")]
 

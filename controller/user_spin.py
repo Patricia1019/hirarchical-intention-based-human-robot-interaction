@@ -12,7 +12,7 @@ import pdb
 sys.path.append(f'{FILE_DIR}/../traj_intention')
 from Dataset import INTENTION_LIST
 # from speech import COMMAND_LIST
-COMMAND_LIST = ["stop","short","long","spin","lift"]
+COMMAND_LIST = ["stop","short","long","spin","lift","rotate"]
 
 
 RETRACT_POSITION = (0.2,0,0.19,0,-0.7,-0.7,0)
@@ -339,7 +339,7 @@ class Receiver:
                 speed[-1] = 0
             elif action[1] % 4 == 3:
                 target_list = [spin_final,back,retract]
-                unique_actions = {target_list.index(spin_final)+1:["wait10","open"]}
+                unique_actions = {target_list.index(spin_final)+1:["wait5","open"]}
                 speed = [0.7] * len(target_list)  
                 speed[-2] = 0
                 speed[-1] = 0
@@ -374,7 +374,7 @@ class Receiver:
                 self.screw_count = 1
                 return ["spin_bottom",self.action_history.count("spin_bottom")]
 
-        if data == "spin" or data == "short":
+        if data == "spin" or data == "short" or data == "rotate" or data == "long":
             self.screw_count = 1
             return ["spin_bottom",self.action_history.count("spin_bottom")]
 

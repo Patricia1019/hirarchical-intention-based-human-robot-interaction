@@ -207,7 +207,7 @@ def main(ARGS):
                 # pdb.set_trace()
                 # print(f"Recognized:{text}")
                 send_flag = True
-                if text not in ["stop","short","long","get up","spin"]:
+                if text not in ["stop","short","long","get up","spin","rotate"]:
                     if "sh" in text or text == "sure" or "so" in text:
                         text = "short"
                     elif "l" in text or "on" in text or "no" in text:
@@ -218,11 +218,13 @@ def main(ARGS):
                         text = "get up"
                     elif "sp" in text or "in" in text or "be" in text:
                         text = "spin"
+                    elif "ro" in text or "at" in text:
+                        text = "rotate"
                     else:
                         send_flag = False 
                         print(f"listen:{text}")
                 if send_flag:
-                    assert text in ["stop","short","long","get up","spin"]
+                    assert text in ["stop","short","long","get up","spin","rotate"]
                     print(f"Recognized:{text}")
                     count += 1
                     send_command_to_ros(text,count)

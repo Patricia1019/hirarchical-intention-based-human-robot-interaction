@@ -371,7 +371,7 @@ class Receiver:
                 tube_key = "long"
             return [f"get_{tube_key}_tubes",self.tube_count[tube_key]]
 
-        if data == "short":
+        if data == "short" or data == "rotate":
             return ["get_short_tubes",self.tube_count["short"]]
         return None,None
         # return ["",int]
